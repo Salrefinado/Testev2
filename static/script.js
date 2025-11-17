@@ -276,7 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (text === 'Status') {
-                th.style.width = '220px';
             }
             if (text === 'Motivo') {
                 th.style.width = '250px';
