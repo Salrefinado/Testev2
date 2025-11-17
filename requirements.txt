@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+requests
+gunicorn
+psycopg2-binary
+Flask-Login
+Flask-Dance
+APScheduler
+werkzeug

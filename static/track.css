@@ -1,0 +1,339 @@
+/* --- Estilos para a Página Pública de Tracking --- */
+:root {
+    --color-primary: #0073ea;
+    --color-primary-light: #e6f1fc;
+    --color-completed: #34a853;
+    --color-pending: #d3d3d3;
+    --color-text-primary: #333;
+    --color-text-secondary: #5f6c7c;
+    --color-background: #f0f2f5;
+    --color-card-bg: #ffffff;
+    --color-border: #e6e9ef;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+}
+
+.track-header {
+    background-color: var(--color-card-bg);
+    padding: 15px 30px;
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.track-header h1 {
+    font-size: 1.5rem;
+    color: var(--color-text-primary);
+    margin: 0;
+    text-align: center;
+}
+
+.track-container {
+    padding: 20px;
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.track-card {
+    background-color: var(--color-card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 25px 30px;
+}
+
+.order-info {
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+.order-info h2 {
+    font-size: 1.8rem;
+    margin: 0 0 10px 0;
+}
+
+.order-info p {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* --- Stepper / Timeline --- */
+.stepper-wrapper {
+    padding: 0 10px;
+}
+
+.stepper-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+
+/* A linha vertical */
+.stepper-list::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 2px;
+    height: calc(100% - 20px);
+    background-color: var(--color-border);
+    z-index: 1;
+}
+
+.stepper-item {
+    position: relative;
+    padding-left: 45px; /* Espaço para o marcador */
+    padding-bottom: 25px;
+    min-height: 40px;
+}
+
+.stepper-item:last-child {
+    padding-bottom: 0;
+}
+
+.stepper-marker {
+    position: absolute;
+    top: 5px;
+    left: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: var(--color-card-bg);
+    border: 2px solid var(--color-pending);
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.stepper-content {
+    padding-top: 3px;
+}
+
+.stepper-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-pending);
+    transition: color 0.3s ease;
+}
+
+.stepper-details {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin: 5px 0 0 0;
+}
+
+/* --- Status --- */
+
+/* Concluído */
+.stepper-item.completed .stepper-marker {
+    background-color: var(--color-completed);
+    border-color: var(--color-completed);
+}
+.stepper-item.completed .stepper-marker::before {
+    content: '✔'; /* Checkmark */
+    color: white;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: block;
+    text-align: center;
+    line-height: 22px;
+}
+.stepper-item.completed .stepper-title {
+    color: var(--color-text-primary);
+}
+
+/* Atual */
+.stepper-item.current .stepper-marker {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    transform: scale(1.1);
+}
+.stepper-item.current .stepper-marker::before {
+    content: '';
+    display: block;
+    width: 10px;
+    height: 10px;
+    background-color: var(--color-primary);
+    border-radius: 50%;
+    margin: 6px; /* (22-10)/2 - 2px border */
+}
+
+.stepper-item.current .stepper-title {
+    color: var(--color-primary);
+    font-size: 1.2rem;
+}
+.stepper-item.current .stepper-details {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+/* Pendente */
+.stepper-item.pending .stepper-details {
+    display: none;
+}
+
+
+/* --- NOVOS ESTILOS: Etapa 2 (Minimizar Etapa 1) --- */
+.phase-details {
+    width: 100%;
+}
+.phase-summary {
+    list-style: none; /* Remove a seta padrão do <summary> */
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+}
+.phase-summary::-webkit-details-marker {
+    display: none; /* Remove a seta no Chrome */
+}
+.phase-summary::before {
+    /* Seta customizada */
+    content: '►';
+    font-size: 0.7em;
+    position: absolute;
+    left: -32px; /* Alinha com os marcadores */
+    top: 10px;
+    color: var(--color-text-secondary);
+}
+.phase-details[open] > .phase-summary::before {
+    content: '▼';
+}
+
+/* O marcador e conteúdo do summary devem se parecer com um stepper-item */
+.phase-summary .stepper-marker {
+    position: static; /* Reseta o P.A. */
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+.phase-summary .stepper-content {
+    padding-top: 3px;
+    margin-left: 23px; /* (45px do padding-left original) - (22px do marcador) */
+}
+.phase-summary .stepper-title {
+    color: var(--color-text-primary);
+}
+.phase-summary .stepper-details {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+/* Lista aninhada (Histórico da Etapa 1) */
+.nested-stepper {
+    list-style: none;
+    padding: 10px 0 0 10px; /* Indentação */
+    margin-top: 10px;
+    border-left: 2px solid var(--color-border);
+    margin-left: 10px; /* Alinha com o marcador pai */
+}
+.nested-stepper::before {
+    display: none; /* Remove a linha vertical principal duplicada */
+}
+.nested-stepper .stepper-item {
+    padding-left: 35px; /* Menos padding */
+}
+.nested-stepper .stepper-item .stepper-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+.nested-stepper .stepper-item .stepper-details {
+    font-size: 0.9rem;
+}
+
+
+/* --- NOVOS ESTILOS: Animação de Concluído --- */
+.success-animation-container {
+    text-align: center;
+    padding: 20px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.success-checkmark {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: block;
+    stroke-width: 3;
+    /* stroke: var(--color-completed); <- Removido do container */
+    stroke-miterlimit: 10;
+    margin: 10px auto;
+    box-shadow: inset 0px 0px 0px var(--color-completed);
+    /* Animações: fill (preencher), scale (pulsar) */
+    animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+}
+
+.checkmark-circle {
+    stroke-dasharray: 166; /* Comprimento do círculo */
+    stroke-dashoffset: 166; /* Começa "vazio" */
+    stroke-width: 3;
+    stroke-miterlimit: 10;
+    stroke: var(--color-completed); /* Círculo é verde */
+    fill: none;
+    /* Animação: stroke (desenhar o círculo) */
+    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+    transform-origin: 50% 50%;
+    stroke-dasharray: 48; /* Comprimento do "check" */
+    stroke-dashoffset: 48; /* Começa "vazio" */
+    stroke-width: 4;
+    stroke: #ffffff; /* <<< ALTERAÇÃO AQUI: "V" é branco */
+    fill: none;
+    /* Animação: stroke (desenhar o check) com delay */
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+/* Keyframe para desenhar a linha (círculo e check) */
+@keyframes stroke {
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Keyframe para o efeito de "pulsar" */
+@keyframes scale {
+    0%, 100% {
+        transform: none;
+    }
+    50% {
+        transform: scale3d(1.1, 1.1, 1);
+    }
+}
+
+/* Keyframe para preencher o círculo de verde (depois de desenhado) */
+@keyframes fill {
+    100% {
+        box-shadow: inset 0px 0px 0px 50px var(--color-completed);
+    }
+}
+
+.success-title {
+    color: var(--color-completed);
+    font-size: 1.8rem;
+    margin: 10px 0 5px 0;
+}
+
+.success-message {
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+    margin: 0 0 15px 0;
+}
+
+.success-contact {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+.success-contact strong {
+    color: var(--color-text-primary);
+}

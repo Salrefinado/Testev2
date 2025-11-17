@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log de Atividades</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Estilos simples para o log */
+        .log-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--color-shadow);
+        }
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .log-table th, .log-table td {
+            border: 1px solid var(--color-border);
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .log-table th {
+            background-color: #f8f9fa;
+        }
+        .log-user {
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+        .log-time {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Work Management</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('index') }}" class="btn-primary">Voltar ao Workflow</a>
+        </div>
+    </header>
+
+    <div class="log-container">
+        <h2>Log de Atividades (Últimos 30 dias)</h2>
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Usuário</th>
+                    <th>Ação</th>
+                    <th>Orçamento</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="log-time">{{ log.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td class="log-user">{{ log.user.nome if log.user else 'Sistema' }}</td>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.orcamento.numero if log.orcamento else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

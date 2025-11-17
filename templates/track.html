@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhamento de Pedido</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='track.css') }}">
+</head>
+<body>
+
+    <header class="track-header">
+        <h1>Acompanhamento do Pedido</h1>
+        </header>
+
+    <main class="track-container">
+        <div class="track-card">
+            <div class="order-info">
+                <h2>Olá, {{ orcamento.cliente }}!</h2>
+                <p>Este é o status de acompanhamento do seu orçamento n° <strong>{{ orcamento.numero }}</strong>.</p>
+            </div>
+
+            {% set final_step_complete = (status_steps|last).name == 'Instalação Concluída' and (status_steps|last).status == 'current' %}
+            
+            {% if final_step_complete %}
+            <div class="success-animation-container">
+                <svg class="success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                    <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+                <h2 class="success-title">Instalação Concluída</h2>
+                <p class="success-message">Seu projeto foi finalizado. Aproveite!</p>
+                <p class="success-contact">
+                    Qualquer duvida entre em contato com nossa equipe!<br>
+                    <strong>(41) 3346-0266</strong>
+                </p>
+            </div>
+            {% endif %}
+            <div class="stepper-wrapper">
+                <ul class="stepper-list">
+                    {% for step in status_steps %}
+                    
+                        {% if not (final_step_complete and loop.last) %}
+
+                            {% if step.is_phase_divider %}
+                            <li class="stepper-item completed phase-divider">
+                                <details class="phase-details" open> 
+                                    <summary class="phase-summary">
+                                        <div class="stepper-marker"></div>
+                                        <div class="stepper-content">
+                                            <h4 class="stepper-title">{{ step.name }}</h4>
+                                            <p class="stepper-details">{{ step.details }} (Clique para recolher/expandir)</p>
+                                        </div>
+                                    </summary>
+                                    <ul class="stepper-list nested-stepper">
+                                        {% for p1_step in step.phase1_steps %}
+                                        <li class="stepper-item {{ p1_step.status }}">
+                                            <div class="stepper-marker"></div>
+                                            <div class="stepper-content">
+                                                <h4 class="stepper-title">{{ p1_step.name }}</h4>
+                                                <p class="stepper-details">{{ p1_step.details }}</p>
+                                            </div>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </details>
+                            </li>
+                            {% else %}
+                            <li class="stepper-item {{ step.status }}">
+                                <div class="stepper-marker"></div>
+                                <div class="stepper-content">
+                                    <h4 class="stepper-title">{{ step.name }}</h4>
+                                    {% if step.status == 'current' or step.status == 'completed' %}
+                                        <p class="stepper-details">{{ step.details }}</p>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% endif %}
+                        
+                        {% endif %} {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

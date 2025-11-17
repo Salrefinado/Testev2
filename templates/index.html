@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Work Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <h1><a href="/" class="header-link">Work Management</a></h1>
+        </div>
+        <div class="header-right">
+            
+            <div class="header-search-container">
+                <input type="text" id="global-search-input" placeholder="Buscar por Nº ou Cliente...">
+                <div id="global-search-results" class="global-search-results-container hidden">
+                    </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-criar-manual" class="btn btn-primary">Criar Orçamento Manual</button>
+                
+                <label for="zip-upload" class="btn btn-primary btn-upload-label">
+                    Novo Orçamento (.zip)
+                </label>
+                <input type="file" id="zip-upload" accept=".zip" class="file-input-hidden">
+            </div>
+            <nav class="header-nav">
+                <a href="/calendario" class="btn btn-secondary">Calendário</a>
+                <a href="/logs" class="btn btn-secondary">Ver Logs</a>
+                <a href="/logout" class="btn btn-secondary">Sair</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="workflow-board" class="workflow-board">
+        </main>
+
+    <template id="grupo-template">
+        <section class="monday-group collapsed" data-group-id="">
+            <h2 class="group-title"></h2>
+            <div class="table-wrapper">
+                <table class="monday-table">
+                    <thead class="monday-thead">
+                    </thead>
+                    <tbody class="monday-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </template>
+
+    <template id="row-template-status">
+        <tr class="monday-row" data-orcamento-id="" data-etapa-concluida="">
+            <td class="col-orcamento">
+                <div class="editable-cell-wrapper" data-action="open-detalhes">
+                    <span class="orc-numero"></span> - <span class="orc-cliente"></span>
+                    <a class="public-link-icon" href="#" target="_blank" title="Link Público">🔗</a>
+                    <span class="standby-info-icon" title="" style="display: none;">ℹ️</span>
+                    <br>
+                    <small class="last-updated-info"></small>
+                </div>
+            </td>
+            <td class="col-status">
+                <div class="status-selector" data-type="orcamento">
+                    <div class="status-display" tabindex="0" data-action="open-status-dropdown">
+                        </div>
+                    <div class="status-dropdown">
+                        </div>
+                </div>
+            </td>
+        </tr>
+    </template>
+    
+    <template id="row-template-producao">
+        <tr class="monday-row" data-orcamento-id="">
+            <td class="col-orcamento">
+                 <div class="editable-cell-wrapper" data-action="open-detalhes">
+                    <span class="orc-numero"></span> - <span class="orc-cliente"></span>
+                    <a class="public-link-icon" href="#" target="_blank" title="Link Público">🔗</a>
+                    <span class="standby-info-icon" title="" style="display: none;">ℹ️</span>
+                    <br>
+                    <small class="last-updated-info"></small>
+                </div>
+            </td>
+        </tr>
+    </template>
+    
+    <template id="row-template-final">
+         <tr class="monday-row" data-orcamento-id="">
+            <td class="col-orcamento">
+                 <div class="editable-cell-wrapper" data-action="open-detalhes">
+                    <span class="orc-numero"></span> - <span class="orc-cliente"></span>
+                    <a class="public-link-icon" href="#" target="_blank" title="Link Público">🔗</a>
+                    <span class="standby-info-icon" title="" style="display: none;">ℹ️</span>
+                    <br>
+                    <small class="last-updated-info"></small>
+                </div>
+            </td>
+            <td class="col-arquivos">
+                </td>
+            <td class="col-status-final">
+                <span class="status-final-text" style="color: var(--status-instalado);">Instalado</span>
+            </td>
+        </tr>
+    </template>
+
+    <template id="tarefa-producao-template">
+        <div class="tarefa-producao" data-tarefa-id="">
+            <span class="tarefa-item"></span>
+            <div class="status-selector" data-type="tarefa">
+                <div class="status-display" tabindex="0" data-action="open-status-dropdown">
+                    </div>
+                <div class="status-dropdown">
+                    </div>
+            </div>
+        </div>
+    </template>
+    
+    <div id="modal-overlay" class="modal-overlay hidden"></div>
+    
+    <div id="modal-criar-orcamento" class="modal hidden">
+        <h4>Criar Novo Orçamento</h4>
+        <form id="form-criar-manual">
+            
+            <div class="form-row">
+                <div class="form-group" style="flex: 1 1 100px;">
+                    <label for="modal-criar-numero">Nº Orçamento</label>
+                    <input type="text" id="modal-criar-numero" name="numero_orcamento" required maxlength="10">
+                </div>
+                <div class="form-group" style="flex: 1 1 300px;">
+                    <label for="modal-criar-cliente">Nome do Cliente</label>
+                    <input type="text" id="modal-criar-cliente" name="nome_cliente" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="modal-criar-numero-cliente">Número Cliente</label>
+                    <input type="text" id="modal-criar-numero-cliente" name="numero_cliente" placeholder="(00) 00000-0000" maxlength="16">
+                </div>
+                <div class="form-group">
+                    <label for="modal-criar-outro-numero">Outro Número (Opcional)</label>
+                    <input type="text" id="modal-criar-outro-numero" name="outro_numero" placeholder="(00) 00000-0000" maxlength="16">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="modal-criar-endereco">Endereço (Para previsão do tempo)</label>
+                <input type="text" id="modal-criar-endereco" name="endereco" placeholder="Rua, Número, Bairro, Cidade e CEP">
+            </div>
+            
+            <div class="form-group form-group-file-upload">
+                <label for="modal-criar-arquivo">Anexar Arquivo (Obrigatório)</label>
+                <label for="modal-criar-arquivo" class="btn btn-secondary btn-file-upload">
+                    <span id="file-upload-text">Escolher arquivo...</span>
+                </label>
+                <input type="file" id="modal-criar-arquivo" name="arquivo" required>
+            </div>
+            <div class="form-row" style="align-items: flex-end;">
+                <div class="form-group-flex">
+                    <label>Prazo Etapa 1 (Dias)</label>
+                    <div class="prazo-input-group">
+                        <div class="modal-quick-days">
+                            <button type="button" class="btn btn-secondary btn-quick-day" data-dias="30" data-dias-target="modal-criar-prazo-dias1">30</button>
+                            <button type="button" class="btn btn-secondary btn-quick-day" data-dias="45" data-dias-target="modal-criar-prazo-dias1">45</button>
+                        </div>
+                        <input type="number" id="modal-criar-prazo-dias1" name="prazo_dias_etapa1" placeholder="Dias" min="1" required>
+                    </div>
+                </div>
+                <div class="form-group-flex">
+                    <label>Prazo Etapa 2 (Dias)</label>
+                    <div class="prazo-input-group">
+                        <div class="modal-quick-days">
+                            <button type="button" class="btn btn-secondary btn-quick-day" data-dias="30" data-dias-target="modal-criar-prazo-dias2">30</button>
+                            <button type="button" class="btn btn-secondary btn-quick-day" data-dias="45" data-dias-target="modal-criar-prazo-dias2">45</button>
+                        </div>
+                        <input type="number" id="modal-criar-prazo-dias2" name="prazo_dias_etapa2" placeholder="Dias" min="1" required>
+                    </div>
+                </div>
+                <div class="form-group-flex" style="margin-left: 10px;">
+                    <label>Etapa 1 Finalizada?</label>
+                    <div class="item-button-group" id="etapa1-finalizada-group">
+                        <button type="button" class="btn-item-select" data-value="Nao">Não</button>
+                        <button type="button" class="btn-item-select" data-value="Sim">Sim</button>
+                    </div>
+                    <input type="hidden" id="modal-criar-etapa1-finalizada" name="etapa1_finalizada" value="">
+                </div>
+            </div>
+            <hr>
+
+            <h4>Adicionar Itens ao Orçamento</h4>
+            <div class="item-search-container">
+                <div class="form-group-search">
+                    <label for="item-search-input">Pesquisar Item</label>
+                    <div class="search-wrapper">
+                        <input type="text" id="item-search-input" placeholder="Digite para buscar (Ex: Coifa, KAM800, Giratório 1L 4E)..." autocomplete="off">
+                        <button type="button" id="btn-add-item" class="btn btn-primary">Adicionar</button>
+                    </div>
+                    <div id="item-search-results" class="item-search-results hidden"></div>
+                </div>
+            </div>
+
+            <div class="added-items-container">
+                <div class="added-items-column">
+                    <h5>Etapa 1</h5>
+                    <ul id="added-items-etapa1" class="added-item-list" data-etapa="1">
+                        </ul>
+                </div>
+                <div class="added-items-column">
+                    <h5>Etapa 2</h5>
+                    <ul id="added-items-etapa2" class="added-item-list" data-etapa="2">
+                        </ul>
+                </div>
+            </div>
+            
+            <input type="hidden" id="hidden-items-etapa1" name="items_etapa1_json">
+            <input type="hidden" id="hidden-items-etapa2" name="items_etapa2_json">
+
+            <div class="modal-actions">
+                <button id="modal-criar-cancel" type="button" class="btn btn-secondary">Cancelar</button>
+                <button id="modal-criar-save" type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+    
+    <div id="modal-visita" class="modal hidden">
+        <h4>Agendar Visita</h4>
+        <label for="modal-visita-data">Data da Visita:</label>
+        <input type="datetime-local" id="modal-visita-data">
+        
+        <div id="modal-visita-weather" class="weather-forecast hidden">
+            <span class="weather-icon"></span>
+            <span class="weather-text"></span>
+        </div>
+        <div class="modal-quick-days"> 
+            <button type="button" class="btn btn-secondary" data-time="08:00">08:00</button>
+            <button type="button" class="btn btn-secondary" data-time="13:00">13:00</button>
+        </div>
+        
+        <label for="modal-visita-responsavel">Responsável:</label>
+        
+        <div class="modal-quick-days">
+            <button type="button" class="btn btn-secondary" data-name="Renato">Renato</button>
+            <button type="button" class="btn btn-secondary" data-name="Paulo">Paulo</button>
+            <button type="button" class="btn btn-secondary" data-name="Edison">Edison</button>
+        </div>
+        <input type="text" id="modal-visita-responsavel" placeholder="Ou digite o nome do responsável">
+        
+        <div class="modal-actions">
+            <button id="modal-visita-cancel" class="btn btn-secondary">Cancelar</button>
+            <button id="modal-visita-save" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+    
+    <div id="modal-instalacao" class="modal hidden">
+        <h4>Agendar Instalação/Entrega</h4>
+        <label for="modal-instalacao-data">Data da Instalação/Entrega:</label>
+        <input type="datetime-local" id="modal-instalacao-data">
+        
+        <div id="modal-instalacao-weather" class="weather-forecast hidden">
+            <span class="weather-icon"></span>
+            <span class="weather-text"></span>
+        </div>
+        <div class="modal-quick-days">
+            <button type="button" class="btn btn-secondary" data-time="08:00">08:00</button>
+            <button type="button" class="btn btn-secondary" data-time="13:00">13:00</button>
+        </div>
+        
+        <label for="modal-instalacao-responsavel">Responsável:</label>
+        <input type="text" id="modal-instalacao-responsavel" placeholder="Nome do responsável">
+        
+        <div class="modal-actions">
+            <button id="modal-instalacao-cancel" class="btn btn-secondary">Cancelar</button>
+            <button id="modal-instalacao-save" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+    
+    <div id="modal-instalado" class="modal hidden">
+        <h4>Confirmar Instalação</h4>
+        <p>Esta instalação se refere a qual etapa?</p>
+        <div class="modal-actions-center">
+            <button id="modal-instalado-etapa1" class="btn btn-primary">Etapa 1</button>
+            <button id="modal-instalado-etapa2" class="btn btn-primary">Etapa 2</button>
+        </div>
+        <div class="modal-actions-center">
+             <button id="modal-instalado-cancel" class="btn btn-secondary">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-standby" class="modal hidden">
+        <h4>Mover para Standby</h4>
+        <label for="modal-standby-motivo">Por favor, informe o motivo:</label>
+        <textarea id="modal-standby-motivo" rows="3" placeholder="Ex: Aguardando liberação do cliente, falta de material, etc."></textarea>
+        <div class="modal-actions">
+            <button id="modal-standby-cancel" class="btn btn-secondary">Cancelar</button>
+            <button id="modal-standby-save" class="btn btn-primary">Mover</button>
+        </div>
+    </div>
+
+    <div id="modal-anexar-projeto" class="modal hidden">
+        <h4>Mover para Produção</h4>
+        
+        <label for="modal-projeto-data-visita">Data da Visita (Obrigatório):</label>
+        <input type="date" id="modal-projeto-data-visita" name="data_visita" required>
+        <small>Esta data será usada para calcular a Data Limite.</small>
+
+        <hr>
+        
+        <label for="modal-projeto-arquivo">Arquivos do Projeto (Obrigatório):</label>
+        <div class="drop-zone" id="modal-projeto-dropzone">
+            <span class="drop-zone-text">Arraste e solte os arquivos aqui ou <strong>clique para escolher</strong></span>
+            <input type="file" id="modal-projeto-arquivo" multiple>
+        </div>
+        <ul id="modal-projeto-file-list" class="file-list-preview"></ul>
+
+        <div class="modal-actions">
+            <button id="modal-projeto-cancel" type="button" class="btn btn-secondary">Cancelar</button>
+            <button id="modal-projeto-save" type="button" class="btn btn-primary">Salvar e Mover</button>
+        </div>
+    </div>
+    
+    <div id="modal-add-tarefa" class="modal hidden">
+        <h4>Adicionar Tarefa de Produção</h4>
+        <input type="hidden" id="modal-tarefa-orcamento-id">
+        
+        <label>Colaborador:</label>
+        <div class="item-button-group" id="modal-tarefa-colaborador-list">
+            <button type="button" class="btn-item-select" data-colab="Edison">Edison</button>
+            <button type="button" class="btn-item-select" data-colab="Luiz">Luiz</button>
+            <button type="button" class="btn-item-select" data-colab="José">José</button>
+            <button type="button" class="btn-item-select" data-colab="Hélio">Hélio</button>
+            <button type="button" class="btn-item-select" data-colab="Anderson">Anderson</button>
+            <button type="button" class="btn-item-select" data-colab="Renato">Renato</button>
+        </div>
+        
+        <label for="modal-tarefa-item">Item:</label>
+        <input type="text" id="modal-tarefa-item" placeholder="Ex: Porta Guilhotina">
+        
+        <div class="modal-actions">
+            <button id="modal-tarefa-cancel" type="button" class="btn btn-secondary">Cancelar</button>
+            <button id="modal-tarefa-save" type="button" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+    
+    <div id="modal-confirmar-cancelamento" class="modal hidden">
+        <h4>Confirmar Ação</h4>
+        <p id="modal-confirmar-texto">Deseja realmente cancelar o agendamento atual?</p>
+        <div class="modal-actions">
+            <button id="modal-confirmar-cancel" class="btn btn-secondary">Não</button>
+            <button id="modal-confirmar-save" class="btn btn-primary">Sim, Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-upload-arquivo" class="modal hidden">
+        <h4>Anexar Arquivos</h4>
+        <p>Anexe um ou mais arquivos (PDF, DWG, etc.) para este orçamento.</p>
+        
+        <label for="modal-upload-arquivo-input">Arquivos (Arraste ou Clique):</label>
+        <div class="drop-zone" id="modal-upload-dropzone">
+            <span class="drop-zone-text">Arraste e solte os arquivos aqui ou <strong>clique para escolher</strong></span>
+            <input type="file" id="modal-upload-arquivo-input" multiple>
+        </div>
+        <ul id="modal-upload-file-list" class="file-list-preview"></ul>
+        
+        <div class="modal-actions">
+            <button id="modal-upload-cancel" type="button" class="btn btn-secondary">Cancelar</button>
+            <button id="modal-upload-save" type="button" class="btn btn-primary">Anexar Arquivos</button>
+        </div>
+    </div>
+
+    <div id="modal-file-list" class="modal hidden">
+        <h4>Arquivos Anexados</h4>
+        <p>Clique no nome para abrir ou no 'X' para remover.</p>
+        <ul id="file-list-modal-body" class="manual-item-list">
+            </ul>
+        
+        <hr>
+        
+        <label for="modal-file-list-input">Anexar mais arquivos:</label>
+        <div class="drop-zone" id="modal-file-list-dropzone">
+            <span class="drop-zone-text">Arraste e solte os arquivos aqui ou <strong>clique para escolher</strong></span>
+            <input type="file" id="modal-file-list-input" multiple>
+        </div>
+        <ul id="modal-file-list-preview" class="file-list-preview"></ul>
+        
+        <div class="modal-actions">
+            <button id="modal-file-list-close" type="button" class="btn btn-secondary">Fechar</button>
+            <button id="modal-file-list-upload-save" type="button" class="btn btn-primary">Anexar Novos</button>
+        </div>
+    </div>
+
+    <div id="modal-confirmar-delete-arquivo" class="modal hidden">
+        <h4>Confirmar Exclusão</h4>
+        <p id="modal-confirmar-delete-texto">Tem certeza que deseja excluir este arquivo? Esta ação não pode ser desfeita.</p>
+        <div class="modal-actions">
+            <button id="modal-confirmar-delete-cancel" class="btn btn-secondary">Cancelar</button>
+            <button id="modal-confirmar-delete-save" class="btn btn-primary btn-danger">Sim, Excluir</button>
+        </div>
+    </div>
+
+    <div id="modal-detalhes-orcamento" class="modal hidden">
+        <h4>Detalhes do Orçamento</h4>
+        <form id="form-detalhes-orcamento">
+            <input type="hidden" id="detalhes-orcamento-id" name="orcamento_id">
+            
+            <div class="detalhes-grid">
+                <div class="form-section">
+                    <h5>Informações Básicas</h5>
+                    <div class="input-group">
+                        <label for="detalhes-numero">Número Orçamento</label>
+                        <input type="text" id="detalhes-numero" name="numero">
+                    </div>
+                    <div class="input-group">
+                        <label for="detalhes-cliente">Nome Cliente</label>
+                        <input type="text" id="detalhes-cliente" name="cliente">
+                    </div>
+                    <div class="input-group">
+                        <label for="detalhes-endereco">Endereço</label>
+                        <input type="text" id="detalhes-endereco" name="endereco" placeholder="Rua, N°, Bairro, Cidade">
+                    </div>
+                    <div class="input-group">
+                        <label for="detalhes-etapa1-concluida">Etapa Atual</label>
+                        <select id="detalhes-etapa1-concluida" name="etapa_concluida">
+                            <option value="0">Etapa 1 (Em andamento)</option>
+                            <option value="1">Etapa 2 (Em andamento)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>Prazos e Registros de Data</h5>
+                    <div class="input-group">
+                        <label for="detalhes-data-limite1">Data Limite (Etapa 1) - XX Dias</label>
+                        <input type="date" id="detalhes-data-limite1" name="data_limite_etapa1">
+                    </div>
+                    <div class="input-group">
+                        <label for="detalhes-data-limite2">Data Limite (Etapa 2) - XX Dias</label>
+                        <input type="date" id="detalhes-data-limite2" name="data_limite_etapa2">
+                    </div>
+                    <hr>
+                    <div class="input-group">
+                        <label for="detalhes-data-visita-etapa1">Data Visita (Etapa 1)</label>
+                        <input type="date" id="detalhes-data-visita-etapa1" name="data_visita_etapa1">
+                    </div>
+                    <div class="input-group">
+                        <label for="detalhes-data-visita-etapa2">Data Visita (Etapa 2)</label>
+                        <input type="date" id="detalhes-data-visita-etapa2" name="data_visita_etapa2">
+                    </div>
+                    <div class="input-group">
+                        <label for="detalhes-data-instalacao">Data Instalação (Final)</label>
+                        <input type="date" id="detalhes-data-instalacao" name="data_instalacao">
+                    </div>
+                    
+                    </div>
+                
+                <div class="form-section full-width">
+                    <h5>Itens (Separados por vírgula)</h5>
+                    <div class="input-group">
+                        <label for="detalhes-itens-etapa1">Itens da Etapa 1</label>
+                        <textarea id="detalhes-itens-etapa1" name="etapa1_descricao" rows="3"></textarea>
+                    </div>
+                     <div class="input-group">
+                        <label for="detalhes-itens-etapa2">Itens da Etapa 2</label>
+                        <textarea id="detalhes-itens-etapa2" name="etapa2_descricao" rows="3"></textarea>
+                    </div>
+                </div>
+
+            </div> <div class="modal-actions">
+                <button id="modal-detalhes-cancel" type="button" class="btn btn-secondary">Cancelar</button>
+                <button id="modal-detalhes-save" type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="modal-edit-simples" class="modal hidden">
+        <h4 id="modal-edit-simples-titulo">Editar Informação</h4>
+        <form id="form-edit-simples">
+            <input type="hidden" id="edit-simples-orcamento-id" name="orcamento_id">
+            <input type="hidden" id="edit-simples-campo" name="campo">
+            
+            <div class="input-group">
+                <label id="modal-edit-simples-label" for="edit-simples-valor-text">Valor</label>
+                <input type="text" id="edit-simples-valor-text" name="valor_text">
+                <input type="date" id="edit-simples-valor-date" name="valor_date" style="display: none;">
+                <textarea id="edit-simples-valor-textarea" name="valor_textarea" rows="4" style="display: none;"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button id="modal-edit-simples-cancel" type="button" class="btn btn-secondary">Cancelar</button>
+                <button id="modal-edit-simples-save" type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+    
+    <div id="modal-producao" class="modal hidden"></div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

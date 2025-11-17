@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs de Atividade - Work Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1><a href="/" class="header-link">Work Management</a></h1>
+        <div class="header-actions">
+            <a href="/" class="btn-primary">Voltar ao Quadro</a>
+            <a href="/logout" class="btn-secondary">Sair</a>
+        </div>
+    </header>
+
+    <main class="workflow-board">
+        <section class="log-container">
+            <h2>Logs de Atividade</h2>
+            <p>Exibindo os últimos 30 dias de atividade. Os logs são apagados automaticamente.</p>
+            
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>Data/Hora (UTC)</th>
+                        <th>Usuário</th>
+                        <th>Orçamento</th>
+                        <th>Ação</th>
+                        <th>Detalhes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="log-entry">
+                        <td data-label="Data">{{ log.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                        <td data-label="Usuário">{{ log.user_nome }}</td>
+                        <td data-label="Orçamento">{{ log.orcamento_numero }}</td>
+                        <td data-label="Ação">{{ log.action }}</td>
+                        <td data-label="Detalhes">{{ log.details }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">Nenhum registro de atividade encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        // Script simples para responsividade da tabela (opcional, mas bom)
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.log-entry').forEach(row => {
+                row.querySelectorAll('td').forEach(cell => {
+                    const label = cell.dataset.label;
+                    if (label) {
+                        cell.setAttribute('aria-label', label);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Work Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-page">
+
+    <div class="login-container">
+        
+        <div id="login-form-container">
+            <form action="/auth" method="POST" class="login-form">
+                <h2>Login</h2>
+                
+                {% if error %}
+                    <p class="login-error">{{ error }}</p>
+                {% endif %}
+
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" name="email" required>
+                
+                <label for="login-senha">Senha</label>
+                <input type="password" id="login-senha" name="senha" required>
+                
+                <div class="login-options">
+                    <input type="checkbox" id="remember-me" name="remember_me">
+                    <label for="remember-me">Lembrar de mim</label>
+                </div>
+                
+                <button type="submit" class="btn-primary login-btn">Entrar</button>
+                
+                <a href="/login/google" class="btn-secondary google-btn">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
+                    Entrar com Google
+                </a>
+
+                <p class="toggle-form">Não tem uma conta? <a href="#" id="show-register">Registre-se</a></p>
+            </form>
+        </div>
+
+        <div id="register-form-container" style="display: none;">
+            <form action="/register" method="POST" class="login-form">
+                <h2>Registrar</h2>
+                
+                <label for="register-nome">Nome</label>
+                <input type="text" id="register-nome" name="nome" required>
+
+                <label for="register-email">Email</label>
+                <input type="email" id="register-email" name="email" required>
+                
+                <label for="register-senha">Senha</label>
+                <input type="password" id="register-senha" name="senha" required>
+                
+                <button type="submit" class="btn-primary login-btn">Registrar</button>
+
+                <p class="toggle-form">Já tem uma conta? <a href="#" id="show-login">Faça login</a></p>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginContainer = document.getElementById('login-form-container');
+            const registerContainer = document.getElementById('register-form-container');
+            const showRegister = document.getElementById('show-register');
+            const showLogin = document.getElementById('show-login');
+
+            showRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginContainer.style.display = 'none';
+                registerContainer.style.display = 'block';
+            });
+
+            showLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginContainer.style.display = 'block';
+                registerContainer.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

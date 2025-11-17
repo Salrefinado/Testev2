@@ -1,0 +1,1640 @@
+/* --- 
+[INÍCIO DA REVISÃO VISUAL]
+- Paleta de cores corporativa (Azul escuro + Cinzas)
+- Status com estilo "Tag" (Fundo claro + Texto escuro)
+- Animações de hover, modais e transições suaves
+- Sombras (box-shadow) mais profissionais
+- Animação de expansão de grupo (slide)
+--- */
+
+:root {
+    /* Paleta Principal (Profissional/Corporativa) */
+    --color-primary: #0a4a9b; /* Azul Corporativo Escuro */
+    --color-primary-dark: #083b7a;
+    --color-primary-light: #e6eef8; /* Azul BEM claro para fundos */
+    --color-text-primary: #1f2329; /* Quase preto */
+    --color-text-secondary: #5a6470; /* Cinza para subtextos */
+    --color-text-on-primary: #ffffff; /* Texto branco para botões */
+    
+    --color-background: #f8f9fc; /* Fundo principal mais limpo */
+    --color-board-bg: #ffffff;
+    --color-header: #ffffff;
+    --color-border: #eef0f4; /* Borda mais sutil */
+    
+    /* Sombra Profissional */
+    --color-shadow-light: rgba(60, 64, 67, 0.1) 0px 1px 2px 0px;
+    --color-shadow-medium: rgba(60, 64, 67, 0.08) 0px 2px 6px 2px;
+
+    /* Ações */
+    --color-danger: #d93025;
+    --color-danger-light: #fbeae9;
+    --color-success: #1e8e3e;
+    --color-success-light: #e6f4ea;
+    
+    /* --- Paleta de Status (Estilo "Tag") --- */
+    
+    /* Status Etapas (Orçamento) */
+    --status-default-bg: #f3f4f6;
+    --status-default-text: #4b5563;
+    
+    --status-visita-bg: #fffbeb;
+    --status-visita-text: #b45309;
+    
+    --status-projetar-bg: #fff7ed;
+    --status-projetar-text: #c2410c;
+    
+    --status-producao-bg: #e0f2fe; /* Azul claro */
+    --status-producao-text: #075985; /* Azul escuro */
+    
+    --status-prontos-bg: var(--color-success-light);
+    --status-prontos-text: var(--color-success);
+    
+    --status-standby-bg: #f3f4f6;
+    --status-standby-text: #374151;
+    
+    --status-instalado-bg: #e6f4ea;
+    --status-instalado-text: #1e8e3e;
+
+    --status-liberado-bg: #f5f3ff;
+    --status-liberado-text: #5b21b6;
+    
+    --status-perigo-bg: var(--color-danger-light);
+    --status-perigo-text: var(--color-danger);
+
+    /* Status Produção (Tarefas) */
+    --status-nao-iniciado-bg: #f3f4f6;
+    --status-nao-iniciado-text: #4b5563;
+    
+    --status-iniciou-bg: #fffbeb;
+    --status-iniciou-text: #b45309;
+    
+    --status-acabamento-bg: #e0f2fe;
+    --status-acabamento-text: #075985;
+    
+    --status-finalizada-bg: var(--color-success-light);
+    --status-finalizada-text: var(--color-success);
+}
+
+/* --- Base --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Animações (Keyframes) --- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeScaleIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Animação de Destaque para Busca */
+@keyframes highlight-flash {
+    0% { background-color: var(--color-primary-light); }
+    100% { background-color: transparent; }
+}
+.row-highlight {
+    /* Aplica a animação (via JS) */
+    animation: highlight-flash 1.5s ease-out;
+}
+
+/* --- Estilos da Página de Login --- */
+body.login-page {
+    justify-content: center;
+    align-items: center;
+    background-color: var(--color-background);
+}
+.login-container {
+    background-color: var(--color-board-bg);
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: var(--color-shadow-medium);
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+}
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.login-form h2 {
+    text-align: center;
+    color: var(--color-text-primary);
+    margin: 0 0 10px 0;
+}
+.login-form label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.login-form input[type="email"],
+.login-form input[type="password"],
+.login-form input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.login-form input[type="email"]:focus,
+.login-form input[type="password"]:focus,
+.login-form input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+.login-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+.login-options label {
+    font-weight: 400;
+    color: var(--color-text-secondary);
+}
+.login-btn {
+    padding: 12px;
+    font-size: 1rem;
+    margin-top: 5px;
+}
+.google-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    font-size: 0.95rem;
+    text-decoration: none;
+}
+.google-btn img {
+    width: 18px;
+    height: 18px;
+}
+.toggle-form {
+    font-size: 0.9rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+.toggle-form a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+.login-error {
+    color: var(--color-danger);
+    background-color: var(--color-danger-light);
+    border: 1px solid var(--color-danger);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+
+/* --- Classes de Botão Globais --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 16px; /* CORREÇÃO: Padding vertical ajustado */
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.5; /* CORREÇÃO: Altura de linha explícita */
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+    transform: translateY(0);
+    box-sizing: border-box; /* Garante que padding e borda contem na altura */
+}
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--color-shadow-light);
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+}
+.btn-primary:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.btn-secondary {
+    background-color: var(--color-board-bg);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+}
+.btn-secondary:hover {
+    background-color: #f9f9f9;
+    border-color: #d1d5db; /* Cinza mais escuro */
+}
+
+/* --- Header --- */
+header {
+    background-color: var(--color-header);
+    padding: 12px 25px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--color-shadow-light);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 100;
+}
+
+.header-left h1 {
+    font-size: 1.5rem;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+.header-link {
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.header-link:hover {
+    color: var(--color-primary);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-grow: 1;
+    justify-content: flex-end;
+}
+
+.header-actions,
+.header-nav {
+    display: flex;
+    align-items: center; /* Alinha verticalmente os botões */
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.file-input-hidden {
+    display: none;
+}
+
+.btn-upload-label {
+    display: inline-flex;
+}
+
+
+/* --- Estrutura do Quadro (Lista Vertical de Grupos) --- */
+.workflow-board {
+    padding: 25px; /* Mais espaçamento */
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.monday-group {
+    background-color: var(--color-board-bg);
+    border-radius: 12px; /* Mais arredondado */
+    margin-bottom: 25px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--color-shadow-medium);
+    position: relative;
+    z-index: 1;
+    /* Transição para elevação do dropdown */
+    transition: z-index 0.3s ease;
+}
+.group-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 18px 25px; /* Mais padding */
+    margin: 0;
+    color: var(--color-primary);
+    cursor: pointer;
+    position: relative;
+}
+.group-title::before {
+    content: '▼';
+    font-size: 0.8em;
+    margin-right: 10px;
+    display: inline-block;
+    transition: transform 0.3s ease-in-out; /* Animação mais suave */
+}
+.monday-group.collapsed .group-title::before {
+    transform: rotate(-90deg);
+}
+
+/* --- [NOVA ANIMAÇÃO DE GRUPO] --- */
+.table-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden; /* Previne scrollbar vertical durante a animação */
+    /* Define a altura máxima para poder animar */
+    max-height: 2000px; /* Um valor alto o suficiente */
+    transition: max-height 0.4s ease-in-out;
+}
+.monday-group.collapsed .table-wrapper {
+    max-height: 0; /* Anima para altura 0 */
+    /* Remove bordas/padding que podem ficar visíveis */
+    border-top: none; 
+}
+/* --- [FIM DA ANIMAÇÃO DE GRUPO] --- */
+
+
+/* --- Estrutura da Tabela (Estilo Monday) --- */
+.monday-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+.monday-thead th {
+    background-color: #fdfdfd; /* Fundo do header da tabela mais limpo */
+    text-align: left;
+    padding: 14px 20px; /* Mais padding */
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--color-border);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.monday-row td {
+    padding: 16px 20px; /* Mais padding */
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.95rem;
+    vertical-align: middle;
+    color: var(--color-text-primary);
+}
+.monday-row {
+    /* [ANIMAÇÃO DE HOVER] */
+    transition: all 0.2s ease-in-out;
+    opacity: 1;
+    transform: scale(1);
+    position: relative;
+    z-index: 2;
+}
+.monday-row:hover {
+    /* [ANIMAÇÃO DE HOVER] - Elevação */
+    transform: scale(1.005);
+    background-color: #fff;
+    box-shadow: var(--color-shadow-medium);
+    z-index: 10; /* Fica acima das outras linhas */
+}
+
+
+/* --- Botão de Ordenação --- */
+.btn-sort-date {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    background-color: #f0f2f5;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    vertical-align: middle;
+}
+.btn-sort-date:hover {
+    background-color: #e6e9ef;
+}
+
+/* --- Animação "Buraco Negro" --- */
+@keyframes fade-out-move {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+}
+.monday-row.row-moving {
+    animation: fade-out-move 0.5s ease-out forwards;
+}
+
+
+/* Alinhamento Forçado das Colunas */
+.monday-thead th:nth-child(1),
+.monday-row td:nth-child(1) {
+    min-width: 250px;
+    width: 30%;
+}
+.monday-thead th:nth-child(2),
+.monday-row td:nth-child(2) {
+    min-width: 150px;
+    width: 150px;
+    vertical-align: top;
+}
+.monday-thead th:nth-child(3),
+.monday-row td:nth-child(3) {
+    min-width: 220px;
+    width: 220px;
+}
+
+.col-data {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    min-width: 140px;
+}
+.col-data-long-text {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    min-width: 200px;
+    max-width: 300px;
+    white-space: normal;
+    line-height: 1.4;
+}
+.col-data-date {
+     font-size: 0.9rem;
+     color: var(--color-text-primary); /* Data mais escura */
+     font-weight: 500;
+}
+.monday-row.sortable-ghost {
+    background-color: #e6e9ef;
+    opacity: 0.7;
+}
+.monday-row.sortable-chosen {
+    cursor: grabbing;
+}
+.monday-row {
+    cursor: grab;
+}
+.monday-row:last-child td {
+    border-bottom: none;
+}
+
+/* --- Fonte do orçamento (Mantida) --- */
+.col-orcamento {
+    font-size: 1.5rem;
+    font-weight: 500; 
+    color: var(--color-text-primary); 
+    line-height: 1.3;
+}
+.col-orcamento .orc-cliente {
+    font-weight: 500; 
+    color: var(--color-text-primary); 
+    font-size: 1em;
+}
+.col-orcamento .orc-numero {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+
+.last-updated-info {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-secondary); /* Cor secundária padrão */
+    line-height: 1.4;
+    margin-top: 4px;
+}
+.public-link-icon {
+    font-size: 0.8em;
+    text-decoration: none;
+    margin-left: 8px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+.public-link-icon:hover {
+    opacity: 1;
+}
+
+.standby-info-icon {
+    font-size: 0.8em;
+    margin-left: 4px;
+    cursor: help;
+    color: var(--status-standby-text);
+}
+
+
+/* --- Célula de Tarefas de Produção --- */
+.col-tarefas-producao {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 350px;
+    vertical-align: top !important;
+    position: relative;
+    z-index: 5;
+}
+.tarefas-compressed {
+    display: flex;
+}
+/* Botão "Expandir" (agora usa o estilo do status) */
+.btn-status-expand {
+    /* Herda de .status-display */
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none;
+}
+.btn-status-expand:hover {
+    transform: scale(1.03);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.btn-status-expand::after {
+    content: '...';
+    margin-left: 8px;
+    font-weight: bold;
+}
+.tarefas-expanded {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.tarefa-colaborador-header {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    margin-top: 5px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 3px;
+}
+.tarefa-producao {
+    margin-left: 15px;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr; 
+    gap: 5px;
+    font-size: 0.9rem;
+    align-items: center;
+}
+.tarefas-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 8px;
+}
+.btn-toggle-tarefas, 
+.btn-add-tarefa {
+    font-size: 0.8rem;
+    padding: 4px 10px; /* Ajustado */
+    border-radius: 6px;
+    cursor: pointer;
+}
+.btn-toggle-tarefas {
+    /* Herda de .btn-secondary */
+    background-color: var(--color-board-bg);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+.btn-toggle-tarefas:hover {
+    background-color: #f9f9f9;
+    border-color: #d1d5db;
+}
+.btn-add-tarefa {
+    /* Herda de .btn-primary */
+    background-color: var(--color-success);
+    color: white;
+    border: none;
+    font-weight: 500;
+}
+.btn-add-tarefa:hover {
+    background-color: #1a7431;
+}
+.tarefas-compressed + .tarefas-actions {
+    display: none;
+}
+.tarefa-colaborador {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+/* --- Célula de Arquivos (REFEITA) --- */
+.col-arquivos {
+    vertical-align: top;
+    padding-top: 14px; /* Alinha melhor com o texto */
+}
+
+.file-pdf-icon-button {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    background-color: transparent;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.6; /* Começa semi-transparente */
+}
+.file-pdf-icon-button:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+.file-pdf-icon-button.has-files {
+    opacity: 1; /* Opacidade total se tiver arquivos */
+}
+/* --- FIM DA CÉLULA DE ARQUIVOS --- */
+
+
+.btn-agendar {
+    /* Herda de .btn-primary */
+    background-color: var(--color-success);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.btn-agendar:hover { 
+    background-color: #1a7431;
+    transform: translateY(-1px);
+}
+
+/* --- [REVISÃO PROFISSIONAL] Célula de Status --- */
+.col-status { 
+    position: relative;
+    z-index: 5;
+}
+.col-status-final .status-final-text {
+    font-weight: 600;
+    color: var(--status-instalado-text);
+    padding: 6px 10px;
+    display: inline-block;
+}
+
+.status-selector {
+    position: relative;
+    width: 200px;
+}
+
+.status-display {
+    padding: 6px 12px; /* Mais padding lateral */
+    border-radius: 20px; /* "Pill shape" */
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+}
+.status-display:hover {
+    transform: scale(1.03);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.status-display::after {
+    content: '▼';
+    font-size: 0.7em;
+    margin-left: 8px;
+    transform: scaleY(0.8);
+    opacity: 0.7;
+}
+
+.status-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    border: 1px solid #d1d5db; /* Borda mais escura */
+    border-radius: 8px;
+    box-shadow: var(--color-shadow-medium);
+    z-index: 50;
+    margin-top: 4px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 4px; /* Espaço interno */
+}
+
+.status-selector.active .status-dropdown {
+    display: block;
+    animation: fadeIn 0.1s ease-out;
+}
+
+.status-option {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    border-radius: 6px; /* Arredondado interno */
+}
+.status-option:hover {
+    background-color: var(--color-background);
+}
+.status-option.selected {
+    background-color: var(--color-primary-dark);
+    color: white;
+    font-weight: 600;
+}
+
+/* --- [REVISÃO PROFISSIONAL] Cores dos Status --- */
+/* Cores Tarefas (Opções Dropdown) */
+.status-option[data-value="Não Iniciado"] { color: var(--status-nao-iniciado-text); }
+.status-option[data-value="Iniciou a Produção"] { color: var(--status-iniciou-text); }
+.status-option[data-value="Fase de Acabamento"] { color: var(--status-acabamento-text); }
+.status-option[data-value="Produção Finalizada"] { color: var(--status-finalizada-text); }
+.status-option[data-value="Aguardando Vidro / Pedra"] { color: var(--status-iniciou-text); }
+.status-option[data-value="Reforma em Andamento"] { color: var(--status-projetar-text); }
+.status-option[data-value="StandBy"] { color: var(--status-standby-text); }
+
+
+/* Cores Tarefas (Display) */
+.status-display[data-status-value="Não Iniciado"] {
+    background-color: var(--status-nao-iniciado-bg);
+    color: var(--status-nao-iniciado-text);
+    border-color: var(--color-border);
+}
+.status-display[data-status-value="Em Produção"], /* Agregado */
+.status-display[data-status-value="Iniciou a Produção"] {
+    background-color: var(--status-iniciou-bg);
+    color: var(--status-iniciou-text);
+    border-color: #fde68a;
+}
+.status-display[data-status-value="Fase de Acabamento"] {
+    background-color: var(--status-acabamento-bg);
+    color: var(--status-acabamento-text);
+    border-color: #bae6fd;
+}
+.status-display[data-status-value="Produção Finalizada"] {
+    background-color: var(--status-finalizada-bg);
+    color: var(--status-finalizada-text);
+    border-color: #bbf7d0;
+}
+.status-display[data-status-value="Aguardando Vidro / Pedra"] {
+    background-color: var(--status-visita-bg);
+    color: var(--status-visita-text);
+    border-color: #fde68a;
+}
+.status-display[data-status-value="Reforma em Andamento"] {
+    background-color: var(--status-projetar-bg);
+    color: var(--status-projetar-text);
+    border-color: #fed7aa;
+}
+.status-display[data-status-value="StandBy"] {
+    background-color: var(--status-standby-bg);
+    color: var(--status-standby-text);
+    border-color: var(--color-border);
+}
+
+/* Cores Orçamento (Display) */
+.status-display[data-status-value="Orçamento Aprovado"],
+.status-display[data-status-value="Agendar Visita"] {
+    background-color: var(--status-default-bg);
+    color: var(--status-default-text);
+    border-color: var(--color-border);
+}
+.status-display[data-status-value="Visita Agendada"],
+.status-display[data-status-value="Mandar para Produção"] {
+    background-color: var(--status-visita-bg);
+    color: var(--status-visita-text);
+    border-color: #fde68a;
+}
+.status-display[data-status-value="Desenhar"] {
+    background-color: var(--status-perigo-bg);
+    color: var(--status-perigo-text);
+    border-color: #fecaca;
+}
+.status-display[data-status-value="Em Desenho"],
+.status-display[data-status-value="Aprovado para Produção"],
+.status-display[data-status-value="Produzir"] {
+    background-color: var(--status-projetar-bg);
+    color: var(--status-projetar-text);
+    border-color: #fed7aa;
+}
+.status-display[data-status-value="Em Produção"] {
+    background-color: var(--status-producao-bg);
+    color: var(--status-producao-text);
+    border-color: #bae6fd;
+}
+.status-display[data-status-value="Agendar Instalação/Entrega"],
+.status-display[data-status-value="Instalação Agendada"] {
+    background-color: var(--status-prontos-bg);
+    color: var(--status-prontos-text);
+    border-color: #bbf7d0;
+}
+.status-display[data-status-value="Instalado"],
+.status-display[data-status-value="Entregue"] {
+    background-color: var(--status-instalado-bg);
+    color: var(--status-instalado-text);
+    border-color: #bbf7d0;
+}
+.status-display[data-status-value="Liberado"] {
+    background-color: var(--status-liberado-bg);
+    color: var(--status-liberado-text);
+    border-color: #ddd6fe;
+}
+.status-display[data-status-value="Aguardando Cliente"],
+.status-display[data-status-value="Aguardando Arq/Eng"],
+.status-display[data-status-value="Aguardando Obra"],
+.status-display[data-status-value="Parado"],
+.status-display[data-status-value="StandBy"],
+.status-display[data-status-value="Standby"] {
+    background-color: var(--status-standby-bg);
+    color: var(--status-standby-text);
+    border-color: var(--color-border);
+}
+
+
+/* --- [REVISÃO PROFISSIONAL] Estilos dos Modais --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4); /* Mais escuro */
+    z-index: 1000;
+    transition: opacity 0.2s ease-in-out;
+    opacity: 1;
+}
+.modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px; /* Mais arredondado */
+    box-shadow: var(--color-shadow-medium);
+    z-index: 1001;
+    min-width: 350px;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    opacity: 1;
+}
+.modal.hidden {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95); /* Animação de scale */
+    pointer-events: none;
+}
+.modal h4 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--color-text-primary);
+}
+.modal label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.modal input[type="datetime-local"],
+.modal input[type="date"],
+.modal input[type="text"],
+.modal input[type="file"],
+.modal input[type="number"],
+.modal select,
+.modal textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    height: 40px; /* <<<< NOVA REGRA: Altura fixa para inputs */
+    box-sizing: border-box; /* Garante que padding/border contem na altura */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.modal textarea {
+    min-height: 80px;
+    height: auto; /* Reseta a altura fixa para textareas */
+    resize: vertical;
+}
+
+/* --- [REVISÃO PROFISSIONAL] Modal de Criação (Botões) --- */
+
+/* === INÍCIO: ESTILOS PARA O NOVO MODAL DE CRIAÇÃO === */
+
+#modal-criar-orcamento {
+    max-width: 800px; /* Mais largo para comportar as colunas */
+}
+
+#modal-criar-orcamento form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espaço entre os elementos do formulário */
+}
+
+/* Layout de linha flexível */
+.form-row {
+    display: flex;
+    flex-wrap: wrap; /* Permite quebrar a linha em telas pequenas */
+    gap: 15px; /* Espaço entre os grupos na mesma linha */
+}
+
+/* A regra de flexibilidade agora se aplica APENAS
+a .form-group que estão DENTRO de .form-row.
+*/
+.form-row .form-group {
+    flex: 1 1 250px; /* Flex-grow, flex-shrink, flex-basis (para largura) */
+}
+
+/* Grupo de formulário genérico */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+
+.form-group label,
+.form-group-flex label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+/* Grupo de formulário para a linha de prazos */
+.form-group-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* ==== INÍCIO DA CORREÇÃO TAREFA 2 (Alinhamento Prazos) ==== */
+.prazo-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espaço entre os botões e o input */
+    height: 40px; /* Garante que o container tenha a altura dos inputs */
+}
+
+.form-group-flex .modal-quick-days {
+    margin: 0; 
+    display: flex; /* Garante que os botões fiquem em linha */
+    gap: 8px;
+}
+
+.btn-quick-day {
+    padding: 6px 10px; 
+    font-size: 0.85rem;
+    min-width: 40px; 
+    width: 40px; /* <<<< LARGURA FIXA */
+    height: 40px; /* <<<< ALTURA FIXA (igual ao input) */
+    box-sizing: border-box;
+}
+
+/* Input de dias dentro do grupo de prazo */
+.prazo-input-group input[type="number"] {
+    width: 80px; /* <<<< LARGURA DESEJADA */
+    height: 40px; /* <<<< ALTURA FIXA (igual ao botão) */
+    padding: 10px 12px;
+}
+/* ==== FIM DA CORREÇÃO TAREFA 2 ==== */
+
+
+/* Botões de seleção (Sim/Não) */
+.item-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    height: 40px; /* <<<< ALTURA FIXA (para alinhar com os prazos) */
+    align-items: center;
+}
+.btn-item-select {
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    padding: 6px 12px;
+    border-radius: 20px; 
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    height: 100%; /* <<<< Ocupa a altura do container (40px) */
+    box-sizing: border-box;
+}
+.btn-item-select:hover {
+    transform: translateY(-1px);
+    border-color: #d1d5db;
+}
+.btn-item-select.selected {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    font-weight: 600;
+}
+/* --- FIM: Botões de seleção (Sim/Não) --- */
+
+
+/* --- Container da Barra de Pesquisa de Itens --- */
+.item-search-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    position: relative; /* Para o dropdown de resultados */
+}
+
+.form-group-search label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.search-wrapper {
+    display: flex;
+    gap: 10px;
+}
+.search-wrapper input {
+    flex-grow: 1; /* Ocupa o espaço disponível */
+}
+.search-wrapper button {
+    flex-shrink: 0; /* Não encolhe */
+}
+
+/* Dropdown de resultados da busca de itens */
+.item-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: calc(100% - 110px); /* Largura do input (100% - largura do botão - gap) */
+    background-color: var(--color-board-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: var(--color-shadow-medium);
+    z-index: 1050; /* Acima do modal */
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 4px;
+}
+.item-search-results.hidden {
+    display: none;
+}
+.search-result-item-modal {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 6px;
+}
+.search-result-item-modal:hover {
+    background-color: var(--color-background);
+}
+.search-result-item-modal strong {
+    color: var(--color-text-primary);
+}
+.search-result-item-modal span {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-left: 8px;
+}
+
+
+/* --- Container das colunas de itens adicionados --- */
+.added-items-container {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+    min-height: 150px; /* Altura mínima para as colunas */
+}
+
+.added-items-column {
+    flex: 1;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 10px;
+    background-color: var(--color-background);
+}
+.added-items-column h5 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 5px;
+}
+
+.added-item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    height: 150px; /* Altura fixa para scroll */
+    overflow-y: auto;
+}
+
+.added-item-list li {
+    background-color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    word-break: break-word; /* Garante quebra de linha */
+}
+
+.btn-remove-added-item {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger);
+    border: 1px solid transparent;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 18px;
+    text-align: center;
+    padding: 0;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+.btn-remove-added-item:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+/* === FIM: ESTILOS PARA O NOVO MODAL DE CRIAÇÃO === */
+
+/* ==== INÍCIO DA CORREÇÃO TAREFA 3 (Botão Upload) ==== */
+.form-group-file-upload {
+    position: relative;
+    /* Esconde o input[type=file] padrão */
+}
+.form-group-file-upload input[type="file"] {
+    display: none;
+}
+.btn-file-upload {
+    /* Usa o estilo .btn-secondary */
+    background-color: var(--color-board-bg);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+    width: 100%;
+    cursor: pointer;
+    font-weight: 500;
+    text-align: left; /* Alinha o texto à esquerda */
+    padding-left: 15px;
+    height: 40px; /* Mesma altura dos outros inputs */
+    line-height: 1.5; /* Alinha o texto verticalmente */
+}
+.btn-file-upload:hover {
+    background-color: #f9f9f9;
+    border-color: #d1d5db;
+}
+/* Texto quando um arquivo é selecionado */
+.btn-file-upload.file-selected {
+    color: var(--color-text-primary);
+    border-color: var(--color-success);
+    font-weight: 600;
+}
+/* ==== FIM DA CORREÇÃO TAREFA 3 ==== */
+
+
+/* --- Itens Manuais (Antigo - agora usado no modal de arquivos) --- */
+.manual-item-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+}
+.manual-item-list li {
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+.btn-remove-manual-item {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 20px;
+    text-align: center;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+.btn-remove-manual-item:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+/* --- Outros Modais --- */
+.modal-quick-days {
+    display: flex;
+    gap: 10px;
+}
+.modal-quick-days input[type="number"] {
+    width: 70px;
+}
+.modal .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+.modal .modal-actions-center {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+
+/* --- Página de Logs --- */
+.log-container {
+    background-color: var(--color-board-bg);
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--color-shadow-medium);
+}
+.log-container h2 {
+    color: var(--color-primary);
+    margin: 0 0 10px 0;
+}
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+.log-table th, .log-table td {
+    border: 1px solid var(--color-border);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.9rem;
+    vertical-align: top;
+}
+.log-table th {
+    background-color: #fdfdfd;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+.log-table td[data-label="Detalhes"] {
+    word-break: break-word;
+}
+.log-table tr:nth-child(even) {
+    background-color: #fcfcfc;
+}
+/* Responsividade da Tabela de Logs */
+@media (max-width: 768px) {
+    .log-table thead { display: none; }
+    .log-table tr {
+        display: block;
+        margin-bottom: 15px;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .log-table td {
+        display: block;
+        text-align: right;
+        border: none;
+        border-bottom: 1px solid var(--color-border);
+        position: relative;
+        padding-left: 50%;
+    }
+    .log-table td:last-child { border-bottom: none; }
+    .log-table td::before {
+        content: attr(aria-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        color: var(--color-text-primary);
+    }
+}
+
+/* --- Correção Z-Index Dropdown --- */
+.group-z-index-lift {
+    z-index: 10 !important;
+}
+.table-wrapper-dropdown-active {
+    overflow: visible !important;
+}
+.row-z-index-lift {
+    z-index: 50 !important;
+}
+
+/* --- Modal de Projeto (Drag and Drop) --- */
+.modal hr {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 10px 0;
+}
+
+.drop-zone {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100px;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px dashed var(--color-border);
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+.drop-zone:hover {
+    background-color: #f0f2f5;
+    border-color: #d1d5db;
+}
+.drop-zone.drag-over {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+}
+.drop-zone-text {
+    pointer-events: none;
+}
+.drop-zone input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.file-list-preview {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    max-height: 150px;
+    overflow-y: auto;
+}
+.file-list-preview li {
+    background-color: var(--color-background);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.file-list-preview .file-name {
+    word-break: break-all;
+}
+.file-list-preview .file-remove-btn {
+    background: none;
+    border: none;
+    color: var(--color-danger);
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+/* --- [REVISÃO PROFISSIONAL] Busca Global --- */
+.header-search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    max-width: 400px;
+    margin: 0 20px;
+}
+
+#global-search-input {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 0.95rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-sizing: border-box;
+    background-color: var(--color-background);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#global-search-input:focus {
+    outline: none;
+    background-color: #fff;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+
+.global-search-results-container {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 100%;
+    background-color: var(--color-board-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: var(--color-shadow-medium);
+    z-index: 2000;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 4px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.global-search-results-container.hidden {
+    display: block; /* MANTÉM no DOM para animação */
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+}
+
+.search-result-item {
+    padding: 12px 15px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 6px;
+    border-bottom: 1px solid var(--color-border);
+}
+.search-result-item:last-child {
+    border-bottom: none;
+}
+.search-result-item:hover {
+    background-color: var(--color-background);
+}
+.search-result-item strong {
+    color: var(--color-primary);
+    display: block;
+    font-size: 1rem;
+}
+.search-result-item span {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+}
+.search-result-no-match {
+    padding: 12px 15px;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* === INÍCIO: ESTILOS ADICIONADOS/RESTAURADOS === */
+
+/* Botão de Perigo (para modais de exclusão) */
+.btn-danger {
+    background-color: var(--color-danger);
+    color: white;
+    border-color: var(--color-danger);
+}
+.btn-danger:hover {
+    background-color: #c5372a; /* Vermelho mais escuro */
+    border-color: #c5372a;
+}
+
+/* Célula de Arquivos (Ícone PDF) */
+.col-arquivos {
+    vertical-align: top;
+    padding-top: 14px; /* Alinha melhor com o texto */
+}
+
+.file-pdf-icon-button {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    background-color: transparent;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.6; /* Começa semi-transparente */
+}
+.file-pdf-icon-button:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+.file-pdf-icon-button.has-files {
+    opacity: 1; /* Opacidade total se tiver arquivos */
+}
+
+/* --- NOVO: Estilo para lista de arquivos no modal --- */
+#file-list-modal-body li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#file-list-modal-body a {
+    text-decoration: none;
+    color: var(--color-primary);
+    font-weight: 500;
+    font-size: 1rem;
+    word-break: break-all;
+    padding-right: 15px;
+}
+#file-list-modal-body a:hover {
+    text-decoration: underline;
+}
+
+/* === FIM: ESTILOS ADICIONADOS/RESTAURADOS === */
+
+/* ==== NOVOS ESTILOS PARA INTERATIVIDADE (SUA SOLICITAÇÃO) ==== */
+
+/* Célula editável genérica */
+.editable-cell {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin: -4px -6px; /* Compensa o padding para manter o alinhamento */
+    transition: background-color 0.2s ease;
+    display: inline-block; /* Garante que o hover funcione bem */
+    min-width: 20px; /* Garante que '---' seja clicável */
+}
+
+.editable-cell:hover {
+    background-color: var(--color-background);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+/* Efeito de hover para a célula de orçamento inteira */
+.col-orcamento .editable-cell-wrapper {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin: -4px -6px;
+    transition: background-color 0.2s ease;
+}
+.col-orcamento .editable-cell-wrapper:hover {
+    background-color: var(--color-background);
+}
+
+
+/* --- Modal Mestre (Detalhes) --- */
+#modal-detalhes-orcamento {
+    max-width: 800px; /* Mais largo */
+}
+
+#form-detalhes-orcamento .detalhes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+#form-detalhes-orcamento .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#form-detalhes-orcamento .form-section.full-width {
+    grid-column: 1 / -1; /* Ocupa a largura toda */
+}
+
+#form-detalhes-orcamento .form-section h5 {
+    font-size: 1rem;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 5px;
+    margin: 5px 0 0 0;
+}
+
+#form-detalhes-orcamento .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* --- Modal de Edição Simples --- */
+#modal-edit-simples textarea {
+    display: none; /* Escondido por padrão */
+    min-height: 100px;
+    resize: vertical;
+}
+#modal-edit-simples input[type="text"] {
+    display: block; /* Visível por padrão */
+}

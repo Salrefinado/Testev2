@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário - Work Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='calendario.css') }}">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <script src="{{ url_for('static', filename='calendario.js') }}" defer></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <h1><a href="/" class="header-link">Work Management</a></h1>
+        </div>
+        <div class="header-right">
+             <nav class="header-nav">
+                <a href="/" class="btn btn-secondary">Voltar ao Quadro</a>
+                <a href="/logs" class="btn btn-secondary">Ver Logs</a>
+                <a href="/logout" class="btn btn-secondary">Sair</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="workflow-board">
+        <section class="log-container">
+            <h2>Calendário de Eventos</h2>
+            
+            <div class="calendar-controls">
+                <button id="btn-todos" class="calendar-btn active">
+                    Ver Todos
+                </button>
+                <button id="btn-visitas" class="calendar-btn">
+                    Ver Visitas Agendadas
+                </button>
+                <button id="btn-instalacoes" class="calendar-btn">
+                    Ver Instalações Agendadas
+                </button>
+            </div>
+            
+            <div id="calendar-container">
+                </div>
+        </section>
+    </main>
+
+    <div id="modal-overlay" class="modal-overlay hidden"></div>
+
+    <div id="modal-evento" class="modal hidden">
+        <h4 id="modal-evento-titulo">Detalhes do Evento</h4>
+        <div id="modal-evento-body">
+            </div>
+        <div class="modal-actions">
+            <button id="modal-evento-fechar" class="btn btn-primary">Fechar</button>
+        </div>
+    </div>
+
+</body>
+</html>
