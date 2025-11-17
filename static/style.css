@@ -519,6 +519,27 @@ header {
     opacity: 1;
 }
 
+/* ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (CSS Link Público) ==== */
+.col-public-link {
+    width: 40px;
+    min-width: 40px;
+    text-align: center;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+.col-public-link .public-link-icon {
+    font-size: 1.1rem; /* Tamanho maior */
+    margin-left: 0;
+    padding: 4px;
+    display: inline-block;
+}
+/* Remove o link da célula de orçamento (já feito no HTML, mas garantido) */
+.col-orcamento .public-link-icon {
+    display: none;
+}
+/* ==== FIM DA ATUALIZAÇÃO PONTO 3 ==== */
+
+
 .standby-info-icon {
     font-size: 0.8em;
     margin-left: 4px;

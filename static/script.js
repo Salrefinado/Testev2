@@ -16,16 +16,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const rowTemplateFinal = document.getElementById('row-template-final');
     const tarefaTemplate = document.getElementById('tarefa-producao-template');
 
+    // ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (Layout Link) ====
     // Mapeamento de cabeçalhos das tabelas por grupo
     const groupHeaders = {
-        'Entrada de Orçamento': ['Orçamento', 'Arquivos', 'Status'],
-        'Visitas e Medidas': ['Orçamento', 'Arquivos', 'Status', 'Data Visita', 'Responsável'],
-        'Projetar': ['Orçamento', 'Arquivos', 'Status'],
-        'Linha de Produção': ['Orçamento', 'Arquivos', 'Data Entrada', 'Data Limite', 'Tarefas de Produção'],
-        'Prontos': ['Orçamento', 'Arquivos', 'Status', 'Itens Prontos', 'Data Pronto', 'Data Instalação', 'Responsável Inst.'],
-        'StandBy': ['Orçamento', 'Arquivos', 'Status', 'Motivo'],
-        'Instalados': ['Orçamento', 'Arquivos', 'Status Final']
+        'Entrada de Orçamento': ['Orçamento', 'Link', 'Arquivos', 'Status'],
+        'Visitas e Medidas': ['Orçamento', 'Link', 'Arquivos', 'Status', 'Data Visita', 'Responsável'],
+        'Projetar': ['Orçamento', 'Link', 'Arquivos', 'Status'],
+        'Linha de Produção': ['Orçamento', 'Link', 'Arquivos', 'Data Entrada', 'Data Limite', 'Tarefas de Produção'],
+        'Prontos': ['Orçamento', 'Link', 'Arquivos', 'Status', 'Itens Prontos', 'Data Pronto', 'Data Instalação', 'Responsável Inst.'],
+        'StandBy': ['Orçamento', 'Link', 'Arquivos', 'Status', 'Motivo'],
+        'Instalados': ['Orçamento', 'Link', 'Arquivos', 'Status Final']
     };
+    // ==== FIM DA ATUALIZAÇÃO PONTO 3 ====
+
 
     // Opções de status para o dropdown de Orçamento
     const statusOptionsByGroup = {
@@ -188,6 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
      * Carrega todo o workflow da API e renderiza no quadro.
      */
     async function loadWorkflow() {
+        
+        // ==== INÍCIO DA ATUALIZAÇÃO PONTO 2 (Manter grupo aberto) ====
+        // 1. Memoriza o grupo que está aberto agora
+        const openGroupId = document.querySelector('.monday-group:not(.collapsed)')?.dataset.groupId;
+        // ==== FIM DA ATUALIZAÇÃO PONTO 2 ====
+
         try {
             const response = await fetch('/api/workflow');
             
@@ -216,6 +225,22 @@ document.addEventListener('DOMContentLoaded', () => {
             
             initDragAndDrop();
             updateTimestamps(); 
+
+            // ==== INÍCIO DA ATUALIZAÇÃO PONTO 2 (Manter grupo aberto) ====
+            // 2. Reabre o grupo que estava memorizado
+            if (openGroupId) {
+                const groupToReopen = document.querySelector(`.monday-group[data-group-id="${openGroupId}"]`);
+                if (groupToReopen) {
+                    groupToReopen.classList.remove('collapsed');
+                }
+            } else {
+                // Se nenhum estava aberto, abre o primeiro por padrão
+                const firstGroup = document.querySelector('.monday-group');
+                if (firstGroup) {
+                    firstGroup.classList.remove('collapsed');
+                }
+            }
+            // ==== FIM DA ATUALIZAÇÃO PONTO 2 ====
 
         } catch (error) {
             console.error('Erro ao carregar workflow:', error);
@@ -256,6 +281,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (text === 'Motivo') {
                 th.style.width = '250px';
             }
+            // ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (CSS Link) ====
+            if (text === 'Link') {
+                th.style.width = '40px';
+                th.style.minWidth = '40px';
+            }
+            // ==== FIM DA ATUALIZAÇÃO PONTO 3 ====
             headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
@@ -344,6 +375,26 @@ document.addEventListener('DOMContentLoaded', () => {
         td.appendChild(button);
         return td;
     }
+
+    // ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (Renderização Link) ====
+    /**
+     * Renderiza a célula de Link Público (função helper).
+     */
+    function renderPublicLinkCell(orcamento, row) {
+        // A célula <td> e o <a> vêm do template
+        const td = row.querySelector('.col-public-link');
+        const publicLinkEl = td.querySelector('.public-link-icon');
+        
+        if (orcamento.public_id) {
+            publicLinkEl.href = `/track/${orcamento.public_id}`;
+            publicLinkEl.style.display = 'inline-block';
+        } else {
+            publicLinkEl.style.display = 'none';
+        }
+        
+        return td;
+    }
+    // ==== FIM DA ATUALIZAÇÃO PONTO 3 ====
     
     /**
      * Renderiza a célula de orçamento (função helper).
@@ -367,13 +418,9 @@ document.addEventListener('DOMContentLoaded', () => {
             lastUpdatedEl.textContent = '';
         }
         
-        const publicLinkEl = wrapper.querySelector('.public-link-icon');
-        if (orcamento.public_id) {
-            publicLinkEl.href = `/track/${orcamento.public_id}`;
-            publicLinkEl.style.display = 'inline';
-        } else {
-            publicLinkEl.style.display = 'none';
-        }
+        // ==== ATUALIZAÇÃO PONTO 3: Lógica do link removida daqui ====
+        // const publicLinkEl = wrapper.querySelector('.public-link-icon');
+        // ... (removido) ...
 
         const standbyInfoEl = wrapper.querySelector('.standby-info-icon');
         if (orcamento.grupo_nome === 'StandBy' && orcamento.standby_details) {
@@ -516,10 +563,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Limpa o <tr> (exceto a primeira célula de orçamento que veio do template)
         const orcamentoCell = row.querySelector('.col-orcamento');
+        const linkCell = row.querySelector('.col-public-link'); // Pega a célula de link
         row.innerHTML = ''; 
         row.appendChild(orcamentoCell); 
         
+        // ===== CORREÇÃO =====
+        row.appendChild(linkCell); // 1. RE-ANEXA A CÉLULA DE LINK QUE VOCÊ SALVOU
+        // ====================
+        
         renderOrcamentoCell(orcamento, row); // Popula a célula de orçamento
+        
+        // ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (Renderização Link) ====
+        // Apenas POPULA a célula de link (ela já foi anexada)
+        renderPublicLinkCell(orcamento, row); // 2. REMOVE O "row.appendChild(...)" DAQUI
+        // ==== FIM DA ATUALIZAÇÃO PONTO 3 ====
         
         row.appendChild(renderArquivosCell(orcamento.arquivos, orcamento.id));
         
@@ -589,6 +646,11 @@ document.addEventListener('DOMContentLoaded', () => {
         row.dataset.dataLimite = dataLimiteProd || ''; 
         
         renderOrcamentoCell(orcamento, row); 
+
+        // ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (Renderização Link) ====
+        row.appendChild(renderPublicLinkCell(orcamento, row));
+        // ==== FIM DA ATUALIZAÇÃO PONTO 3 ====
+        
         row.appendChild(renderArquivosCell(orcamento.arquivos, orcamento.id));
         
         // Data Entrada (Editável) - REQ 3
@@ -699,6 +761,11 @@ document.addEventListener('DOMContentLoaded', () => {
         row.dataset.orcamentoId = orcamento.id;
 
         renderOrcamentoCell(orcamento, row);
+        
+        // ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (Renderização Link) ====
+        row.appendChild(renderPublicLinkCell(orcamento, row));
+        // ==== FIM DA ATUALIZAÇÃO PONTO 3 ====
+
         row.appendChild(renderArquivosCell(orcamento.arquivos, orcamento.id));
         
         return row;
@@ -1816,14 +1883,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // ==== INÍCIO DA ATUALIZAÇÃO PONTO 2 (Acordeão) ====
     function handleGroupToggle(e) {
         if (e.target.classList.contains('group-title')) {
             const group = e.target.closest('.monday-group');
             if (group) {
-                group.classList.toggle('collapsed');
+                const isOpening = group.classList.contains('collapsed');
+
+                if (isOpening) {
+                    // Se está abrindo, fecha todos os outros primeiro
+                    document.querySelectorAll('.monday-group:not(.collapsed)').forEach(g => {
+                        if (g !== group) g.classList.add('collapsed');
+                    });
+                    group.classList.remove('collapsed'); // Abre o clicado
+                } else {
+                    // Se está fechando, apenas fecha ele
+                    group.classList.add('collapsed');
+                }
             }
         }
     }
+    // ==== FIM DA ATUALIZAÇÃO PONTO 2 ====
 
     function closeAllStatusDropdowns(exceptThisOne = null) {
         document.querySelectorAll('.status-selector.active').forEach(selector => {
@@ -1857,6 +1937,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 handle: '.monday-row',
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
+                
+                // ==== INÍCIO DA ATUALIZAÇÃO PONTO 1 (Hitbox Drag&Drop) ====
+                onMove: function (evt) {
+                    // evt.related é o elemento sobre o qual estamos arrastando
+                    const targetEl = evt.related;
+                    
+                    // Verifica se é um título de grupo E se esse grupo está fechado
+                    if (targetEl && targetEl.classList.contains('group-title') && targetEl.closest('.monday-group').classList.contains('collapsed')) {
+                        // Expande o grupo
+                        targetEl.closest('.monday-group').classList.remove('collapsed');
+                    }
+                    return true;
+                },
+                // ==== FIM DA ATUALIZAÇÃO PONTO 1 ====
+
                 onEnd: async (evt) => {
                     const orcamentoId = evt.item.dataset.orcamentoId;
                     const novoGrupoId = evt.to.closest('.monday-group').dataset.groupId;
@@ -2244,6 +2339,18 @@ document.addEventListener('DOMContentLoaded', () => {
             handleGroupToggle(e);
             return;
         }
+
+        // ==== INÍCIO DA ATUALIZAÇÃO PONTO 4 (Hitbox Modal) ====
+        // Se a ação for 'open-public-link', não fazemos nada aqui,
+        // pois o <a> já tem o href e target="_blank".
+        if (actionTarget.dataset.action === 'open-public-link') {
+            console.log('Link público clicado.');
+            // A ação padrão do link (abrir em nova aba) ocorrerá.
+            // Impede que o clique "vaze" para o 'open-detalhes'
+            e.stopPropagation(); 
+            return;
+        }
+        // ==== FIM DA ATUALIZAÇÃO PONTO 4 ====
         
         const action = actionTarget.dataset.action;
         const row = actionTarget.closest('.monday-row');

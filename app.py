@@ -259,6 +259,12 @@ class Orcamento(db.Model):
     numero_cliente = db.Column(db.String(50), nullable=True)
     # --- NOVO CAMPO ADICIONADO ---
     outro_numero = db.Column(db.String(50), nullable=True)
+    
+    # ==== INÍCIO DA CORREÇÃO (REMOVER db.relationship) ====
+    # A linha abaixo estava causando o erro de 'backref' redundante.
+    # O 'backref' em Grupo(orcamentos) já cria o atributo 'orcamento.grupo'.
+    # grupo = db.relationship('Grupo', backref='orcamentos', lazy=True) 
+    # ==== FIM DA CORREÇÃO ====
 
 
     def to_dict(self):
