@@ -73,12 +73,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==== NOVOS MODAIS DE EDIÇÃO ====
     const modalDetalhesOrcamento = document.getElementById('modal-detalhes-orcamento');
     const modalEditSimples = document.getElementById('modal-edit-simples');
+
+    // ==== INÍCIO DA ALTERAÇÃO (Adicionar Modal de Movimentação) ====
+    const modalConfirmarMovimentacao = document.getElementById('modal-confirmar-movimentacao');
+    // ==== FIM DA ALTERAÇÃO ====
     
     // Variáveis de estado
     let projectFilesToUpload = [];
     let currentUploadOrcamentoId = null;
     let weatherForecastData = {};
     let weatherFetchController = null;
+
+    // ==== INÍCIO DA ALTERAÇÃO (Manter grupo de destino aberto) ====
+    let openGroupIdOnLoad = null; 
+    let dragOverThrottle = null; // Para otimizar o evento de arrastar
+    // ==== FIM DA ALTERAÇÃO ====
 
     // === INÍCIO: NOVOS ELEMENTOS DO MODAL DE CRIAÇÃO ===
     const itemSearchInput = document.getElementById('item-search-input');
@@ -192,10 +201,17 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function loadWorkflow() {
         
-        // ==== INÍCIO DA ATUALIZAÇÃO PONTO 2 (Manter grupo aberto) ====
-        // 1. Memoriza o grupo que está aberto agora
-        const openGroupId = document.querySelector('.monday-group:not(.collapsed)')?.dataset.groupId;
-        // ==== FIM DA ATUALIZAÇÃO PONTO 2 ====
+        // ==== INÍCIO DA ALTERAÇÃO (Usar variável global para abrir grupo) ====
+        // 1. Verifica se há um grupo específico que devemos manter aberto
+        const groupIdToOpen = openGroupIdOnLoad;
+        // Limpa a variável global para que ela não afete a próxima recarga
+        openGroupIdOnLoad = null; 
+        
+        // Se não houver um grupo específico, memoriza o que está aberto agora
+        const currentOpenGroupId = !groupIdToOpen 
+            ? document.querySelector('.monday-group:not(.collapsed)')?.dataset.groupId 
+            : null;
+        // ==== FIM DA ALTERAÇÃO ====
 
         try {
             const response = await fetch('/api/workflow');
@@ -226,21 +242,28 @@ document.addEventListener('DOMContentLoaded', () => {
             initDragAndDrop();
             updateTimestamps(); 
 
-            // ==== INÍCIO DA ATUALIZAÇÃO PONTO 2 (Manter grupo aberto) ====
+            // ==== INÍCIO DA ALTERAÇÃO (Lógica de reabertura) ====
             // 2. Reabre o grupo que estava memorizado
-            if (openGroupId) {
-                const groupToReopen = document.querySelector(`.monday-group[data-group-id="${openGroupId}"]`);
+            if (groupIdToOpen) {
+                // Prioridade 1: Abrir o grupo de destino da movimentação
+                const groupToReopen = document.querySelector(`.monday-group[data-group-id="${groupIdToOpen}"]`);
+                if (groupToReopen) {
+                    groupToReopen.classList.remove('collapsed');
+                }
+            } else if (currentOpenGroupId) {
+                 // Prioridade 2: Reabrir o grupo que estava aberto antes da recarga
+                const groupToReopen = document.querySelector(`.monday-group[data-group-id="${currentOpenGroupId}"]`);
                 if (groupToReopen) {
                     groupToReopen.classList.remove('collapsed');
                 }
             } else {
-                // Se nenhum estava aberto, abre o primeiro por padrão
+                // Prioridade 3: Abrir o primeiro grupo por padrão
                 const firstGroup = document.querySelector('.monday-group');
                 if (firstGroup) {
                     firstGroup.classList.remove('collapsed');
                 }
             }
-            // ==== FIM DA ATUALIZAÇÃO PONTO 2 ====
+            // ==== FIM DA ALTERAÇÃO ====
 
         } catch (error) {
             console.error('Erro ao carregar workflow:', error);
@@ -276,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (text === 'Status') {
+                // th.style.width = '180px'; // Largura fixa para status
             }
             if (text === 'Motivo') {
                 th.style.width = '250px';
@@ -895,6 +919,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-projeto-data-visita').value = ''; 
         projectFilesToUpload = []; 
 
+        // ==== INÍCIO DA ALTERAÇÃO (Adicionar Modal de Movimentação) ====
+        document.getElementById('modal-confirmar-movimentacao').classList.add('hidden');
+        // ==== FIM DA ALTERAÇÃO ====
+
         document.getElementById('modal-upload-arquivo-input').value = '';
         document.getElementById('modal-upload-file-list').innerHTML = '';
         document.getElementById('file-list-modal-body').innerHTML = '';
@@ -1479,6 +1507,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==== INÍCIO DA ALTERAÇÃO (Nova Função de Confirmação de Movimento) ====
+    /**
+     * Abre o modal genérico para confirmar a movimentação entre grupos.
+     */
+    function openConfirmarMovimentacaoModal(grupoAntigoNome, grupoNovoNome) {
+        return new Promise((resolve) => {
+            const texto = document.getElementById('modal-confirmar-movimentacao-texto');
+            texto.innerHTML = `Tem certeza que deseja mover o item de <strong>${grupoAntigoNome}</strong> para <strong>${grupoNovoNome}</strong>?`;
+            
+            showModal(modalConfirmarMovimentacao);
+
+            document.getElementById('modal-confirmar-movimentacao-save').onclick = () => {
+                hideModals(); 
+                resolve(true); 
+            };
+            document.getElementById('modal-confirmar-movimentacao-cancel').onclick = () => {
+                hideModals(); 
+                resolve(false); 
+            };
+        });
+    }
+    // ==== FIM DA ALTERAÇÃO ====
+
     // --- Funções de Upload de Arquivo (Sem alteração) ---
     function openUploadModal(orcamentoId) {
         currentUploadOrcamentoId = orcamentoId;
@@ -1870,6 +1921,43 @@ document.addEventListener('DOMContentLoaded', () => {
         rows.forEach(row => tbody.appendChild(row));
     }
     
+    // ==== INÍCIO DA ALTERAÇÃO (Nova Função para Abrir Grupos no Drag) ====
+    /**
+     * Esta função é chamada globalmente quando um item está sendo arrastado
+     * sobre a página (iniciada pelo onStart do Sortable.js).
+     * Ela detecta se o mouse está sobre o TÍTULO de um grupo recolhido
+     * e o expande (com lógica de acordeão).
+     */
+    function handleDragOverGroup(e) {
+        // Otimização (Throttle): Só executa esta verificação a cada 200ms
+        // para não sobrecarregar o navegador durante o arrasto.
+        if (dragOverThrottle) return;
+        dragOverThrottle = setTimeout(() => {
+            dragOverThrottle = null;
+        }, 200); 
+
+        // 1. Encontra o título mais próximo de onde o mouse está
+        const title = e.target.closest('.group-title');
+        
+        if (title) {
+            // 2. Encontra o grupo pai desse título
+            const group = title.closest('.monday-group');
+            
+            // 3. Se o grupo existe E está recolhido
+            if (group && group.classList.contains('collapsed')) {
+                
+                // 4. Lógica de Acordeão (fecha os outros grupos)
+                document.querySelectorAll('.monday-group:not(.collapsed)').forEach(g => {
+                    if (g !== group) g.classList.add('collapsed');
+                });
+                
+                // 5. Abre o grupo alvo
+                group.classList.remove('collapsed');
+            }
+        }
+    }
+    // ==== FIM DA ALTERAÇÃO ====
+
     function handleToggleTarefas(buttonEl) {
         const action = buttonEl.dataset.action;
         const cell = buttonEl.closest('.col-tarefas-producao');
@@ -1927,7 +2015,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- LÓGICA DE DRAG & DROP (MODIFICADA) ---
     
+    // ==== INÍCIO DA ALTERAÇÃO (Função initDragAndDrop ATUALIZADA) ====
     function initDragAndDrop() {
+        // Limpa listeners antigos de 'dragover' para evitar duplicidade
+        // (Boa prática caso a função seja chamada múltiplas vezes)
+        document.removeEventListener('dragover', handleDragOverGroup);
+
         const tbodys = document.querySelectorAll('.monday-tbody');
         tbodys.forEach(tbody => {
             new Sortable(tbody, {
@@ -1937,31 +2030,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
                 
-                // ==== INÍCIO DA ATUALIZAÇÃO PONTO 1 (Hitbox Drag&Drop) ====
-                onMove: function (evt) {
-                    // evt.related é o elemento sobre o qual estamos arrastando
-                    const targetEl = evt.related;
-                    
-                    // Verifica se é um título de grupo E se esse grupo está fechado
-                    if (targetEl && targetEl.classList.contains('group-title') && targetEl.closest('.monday-group').classList.contains('collapsed')) {
-                        // Expande o grupo
-                        targetEl.closest('.monday-group').classList.remove('collapsed');
-                    }
-                    return true;
+                /**
+                 * NOVO: onStart
+                 * Quando o usuário começa a arrastar um item, nós
+                 * ligamos o listener global 'dragover' que ficará
+                 * "escutando" por hovers em títulos de grupo.
+                 */
+                onStart: function() {
+                    document.addEventListener('dragover', handleDragOverGroup);
                 },
-                // ==== FIM DA ATUALIZAÇÃO PONTO 1 ====
 
+                /**
+                 * REMOVIDO: onMove
+                 * A lógica 'onMove' anterior estava incorreta pois só
+                 * detectava elementos *dentro* da área de drop (tbody),
+                 * e não o título (h2). Foi substituída pelo listener global.
+                 */
+                
+                /**
+                 * ATUALIZADO: onEnd
+                 * Quando o usuário solta o item.
+                 */
                 onEnd: async (evt) => {
+                    // 1. Desliga o listener global 'dragover'
+                    document.removeEventListener('dragover', handleDragOverGroup);
+                    
                     const orcamentoId = evt.item.dataset.orcamentoId;
                     const novoGrupoId = evt.to.closest('.monday-group').dataset.groupId;
                     const grupoAntigoId = evt.from.closest('.monday-group').dataset.groupId;
                     
+                    // 2. Verifica se houve mudança de grupo
                     if (novoGrupoId !== grupoAntigoId) {
                         let dados_adicionais = {};
                         
                         const grupoAntigoNome = evt.from.closest('.monday-group').querySelector('.group-title').textContent;
                         const grupoNovoNome = evt.to.closest('.monday-group').querySelector('.group-title').textContent;
 
+                        // 3. Abre o modal de confirmação de movimento
+                        const moveConfirmed = await openConfirmarMovimentacaoModal(grupoAntigoNome, grupoNovoNome);
+
+                        if (!moveConfirmed) {
+                            // Se "Cancelar", recarrega o workflow para reverter a mudança
+                            loadWorkflow();
+                            return;
+                        }
+
+                        // 4. (Se "Sim") Continua com a lógica de verificação
                         const dataVisitaAtual = evt.item.dataset.dataVisita;
                         const dataInstalacaoAtual = evt.item.dataset.dataInstalacao;
 
@@ -1983,6 +2097,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
 
+                        // 5. Verifica se precisa de modais extras (Standby, Produção)
                         if ((grupoAntigoNome === 'Projetar' && grupoNovoNome === 'Linha de Produção') || 
                             (grupoAntigoNome === 'Visitas e Medidas' && grupoNovoNome === 'Linha de Produção') ||
                             (grupoAntigoNome === 'Entrada de Orçamento' && grupoNovoNome === 'Linha de Produção')) {
@@ -2005,12 +2120,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return;
                             }
                         }
-                         handleManualMove(orcamentoId, novoGrupoId, grupoAntigoId, dados_adicionais);
+
+                        // 6. Executa a movimentação
+                        handleManualMove(orcamentoId, novoGrupoId, grupoAntigoId, dados_adicionais);
                     }
                 }
             });
         });
     }
+    // ==== FIM DA ALTERAÇÃO ====
     
     async function handleManualMove(orcamentoId, novoGrupoId, grupoAntigoId, dados_adicionais = {}) {
         const row = document.querySelector(`tr[data-orcamento-id="${orcamentoId}"]`);
@@ -2033,6 +2151,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.status === 401) { window.location.href = '/login'; return; }
             const result = await response.json();
             if (!response.ok) throw new Error(result.error);
+            
+            // ==== INÍCIO DA ALTERAÇÃO (Manter grupo de destino aberto) ====
+            // Define a variável global ANTES de recarregar
+            openGroupIdOnLoad = novoGrupoId;
+            // ==== FIM DA ALTERAÇÃO ====
             
             await loadWorkflow();
         } catch (error) {
