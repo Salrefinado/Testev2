@@ -3,8 +3,8 @@ import zipfile
 import json
 import requests
 import threading
-import uuid # NOVO
-import re # NOVO (Para o Giratório)
+import uuid
+import re
 from urllib.parse import quote_plus
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, flash, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -37,19 +37,21 @@ app.config['SCHEDULER_API_ENABLED'] = True
 db = SQLAlchemy(app)
 # --- Fim da Configuração Atualizada ---
 
-# --- Configuração de Notificações ---
-API_KEY = "9102015"
-API_URL = "https://api.callmebot.com/whatsapp.php"
+# --- Configuração de Notificações (ATUALIZADO PARA BOT LOCAL) ---
+# Agora aponta para o servidor node rodando o bot.js na porta 5000
+API_URL = "http://127.0.0.1:5000/send_notification"
+
+# Telefones mantidos para referência (a função de envio agora delega o destino ao bot.js)
 PHONE_ADMIN = "554188368319"
 PHONE_PAULO = "554100000000"
 PHONE_RENATO = "554100000001"
 LISTA_GERAL = [PHONE_ADMIN]
 
-# --- NÚMEROS AUTORIZADOS PARA O BOT (OPÇÃO 2) ---
+# --- NÚMEROS AUTORIZADOS PARA O BOT (CONSULTAS) ---
 AUTHORIZED_BOT_NUMBERS = [
-    "554188368319@c.us", # SEU NÚMERO (Exemplo)
-    "554100000000@c.us", # PAULO (exemplo)
-    "554187831513@c.us", # RENATO (exemplo)
+    "554188368319@c.us", # SEU NÚMERO
+    "554100000000@c.us", # PAULO
+    "554187831513@c.us", # RENATO
     "554192078542@c.us", # ADICIONADO
 ]
 
@@ -73,22 +75,27 @@ google_bp = make_google_blueprint(
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
-# --- Função Auxiliar de Notificação (Usada pelo App) ---
-def send_whatsapp_notification(message, phone_numbers):
-    def send_request_target(phone, encoded_message):
+# --- Função Auxiliar de Notificação (ATUALIZADA) ---
+def send_whatsapp_notification(message, phone_numbers=None):
+    """
+    Envia notificação para o Bot Local (bot.js).
+    O parâmetro phone_numbers é mantido para compatibilidade de chamada, 
+    mas o bot.js decidirá o destino (Grupo 120363404624474162@g.us).
+    """
+    def send_request_target(msg_content):
         try:
-            full_url = f"{API_URL}?phone={phone}&text={encoded_message}&apikey={API_KEY}"
-            response = requests.get(full_url, timeout=10)
-            print(f"Notificação enviada para {phone}. Status: {response.status_code}")
+            payload = {"message": msg_content}
+            headers = {'Content-Type': 'application/json'}
+            # Envia POST para o bot.js
+            response = requests.post(API_URL, json=payload, headers=headers, timeout=10)
+            print(f"Notificação enviada para o Bot Local. Status: {response.status_code}")
         except Exception as e:
-            print(f"Erro ao enviar notificação para {phone}: {e}")
+            print(f"Erro ao enviar notificação para o Bot Local: {e}")
+            
     try:
-        encoded_message = quote_plus(message)
-        if not isinstance(phone_numbers, list):
-            phone_numbers = [phone_numbers]
-        for phone in phone_numbers:
-            thread = threading.Thread(target=send_request_target, args=(phone, encoded_message))
-            thread.start()
+        # Executa em thread para não bloquear a resposta da interface web
+        thread = threading.Thread(target=send_request_target, args=(message,))
+        thread.start()
     except Exception as e:
         print(f"Erro ao preparar notificação: {e}")
 
@@ -162,7 +169,7 @@ MAP_ITEM_COLABORADOR = {
     "Chaminé Aço Carbono": "Anderson",
     
     # Itens Elevar (Etapa 2)
-    "Sistema de Elevar Manual 2 3/16": "José", # (MUDADO DE LUIZ/JOSÉ PARA JOSÉ)
+    "Sistema de Elevar Manual 2 3/16": "José", 
     "Sistema de Elevar Manual 1/8 e 3/16": "José",
     "Sistema de Elevar Manual Arg. e 3/16": "José",
     "Sistema de Elevar Manual Arg. e 1/8": "José",
@@ -257,15 +264,8 @@ class Orcamento(db.Model):
     prazo_dias_etapa1 = db.Column(db.Integer, nullable=True)
     prazo_dias_etapa2 = db.Column(db.Integer, nullable=True)
     numero_cliente = db.Column(db.String(50), nullable=True)
-    # --- NOVO CAMPO ADICIONADO ---
     outro_numero = db.Column(db.String(50), nullable=True)
     
-    # ==== INÍCIO DA CORREÇÃO (REMOVER db.relationship) ====
-    # A linha abaixo estava causando o erro de 'backref' redundante.
-    # O 'backref' em Grupo(orcamentos) já cria o atributo 'orcamento.grupo'.
-    # grupo = db.relationship('Grupo', backref='orcamentos', lazy=True) 
-    # ==== FIM DA CORREÇÃO ====
-
 
     def to_dict(self):
         current_etapa = 2 if self.etapa_concluida >= 1 else 1

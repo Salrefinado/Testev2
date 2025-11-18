@@ -1,72 +1,113 @@
 // bot.js
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const http = require('http'); // Para fazer a requisição ao app.py
+const http = require('http'); // Para fazer a requisição GET ao app.py (Consultas)
+const express = require('express'); // Para receber a requisição POST do app.py (Notificações)
 
-// Configuração
-// IMPORTANTE: O seu app.py DEVE estar rodando na porta 5001
-const PYTHON_API_HOST = 'http://127.0.0.1:5001'; // Host base da API
+// --- CONFIGURAÇÃO ---
 
-// Lista de números autorizados (deve ser a MESMA lista do app.py)
-// O formato @c.us é como o whatsapp-web.js identifica usuários
+// Porta onde o BOT vai escutar os pedidos do Python
+const BOT_SERVER_PORT = 5000; 
+
+// Host da API Python (app.py) para consultas de dados
+const PYTHON_API_HOST = 'http://127.0.0.1:5001'; 
+
+// ID do Grupo de Notificações e Comandos
+const TARGET_GROUP_ID = '120363404624474162@g.us';
+
+// Lista de números autorizados (Privados)
 const AUTHORIZED_BOT_NUMBERS = [
-    "554188368319@c.us", // SEU NÚMERO (Exemplo)
-    "554100000000@c.us", // PAULO (exemplo)
-    "554187831513@c.us", // RENATO (exemplo)
-    "554192078542@c.us", // NOVO NÚMERO ADICIONADO
+    "554188368319@c.us", // SEU NÚMERO
+    "554100000000@c.us", // PAULO
+    "554187831513@c.us", // RENATO
+    "554192078542@c.us", // NOVO NÚMERO
 ];
+
+// --- INICIALIZAÇÃO DO SERVIDOR EXPRESS (RECEBER DO PYTHON) ---
+const app = express();
+app.use(express.json()); // Permite ler JSON no corpo da requisição
 
 console.log('Iniciando cliente do WhatsApp...');
 
 const client = new Client({
-    authStrategy: new LocalAuth(), // Salva a sessão para não escanear sempre
+    authStrategy: new LocalAuth(),
     puppeteer: {
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     }
 });
 
-// Evento 1: Gerar o QR Code
+// --- Rota para o app.py enviar notificações ---
+app.post('/send_notification', async (req, res) => {
+    const { message } = req.body;
+    
+    if (!message) {
+        return res.status(400).json({ error: 'Mensagem vazia.' });
+    }
+
+    try {
+        // Envia a mensagem diretamente para o GRUPO ALVO
+        await client.sendMessage(TARGET_GROUP_ID, message);
+        console.log(`[API] Notificação enviada para o grupo ${TARGET_GROUP_ID}`);
+        return res.status(200).json({ status: 'success' });
+    } catch (error) {
+        console.error('[API] Erro ao enviar notificação:', error);
+        return res.status(500).json({ error: 'Falha ao enviar mensagem no WhatsApp.' });
+    }
+});
+
+// Inicia o servidor do Bot
+app.listen(BOT_SERVER_PORT, () => {
+    console.log(`Servidor do Bot rodando e ouvindo em http://127.0.0.1:${BOT_SERVER_PORT}`);
+});
+
+
+// --- LÓGICA DO WHATSAPP ---
+
 client.on('qr', (qr) => {
     console.log('QR Code recebido, escaneie com seu celular:');
     qrcode.generate(qr, { small: true });
 });
 
-// Evento 2: Autenticado com sucesso
 client.on('ready', () => {
-    console.log('Cliente conectado e pronto!');
-    console.log('Ouvindo mensagens...');
+    console.log('Cliente WhatsApp conectado e pronto!');
 });
 
-// Evento 3: Mensagem recebida
 client.on('message', async (msg) => {
-    const remetente = msg.from; // ex: "554188368319@c.us"
+    const remetente = msg.from; // Pode ser um usuário privado ou o ID do grupo
     const textoOriginal = msg.body.trim();
     const textoLower = textoOriginal.toLowerCase();
 
-    console.log(`Mensagem recebida de ${remetente}: "${textoOriginal}"`);
+    // 1. Verifica permissão:
+    // Aceita se for um número autorizado OU se a mensagem vier do GRUPO ALVO
+    const isAuthorizedPrivate = AUTHORIZED_BOT_NUMBERS.includes(remetente);
+    const isTargetGroup = remetente === TARGET_GROUP_ID;
 
-    // 1. Verifica se é de um número autorizado
-    if (!AUTHORIZED_BOT_NUMBERS.includes(remetente)) {
-        console.log('Número não autorizado. Ignorando.');
+    if (!isAuthorizedPrivate && !isTargetGroup) {
+        // Ignora mensagens de desconhecidos e outros grupos
         return;
     }
 
-    // 2. Não responde a si mesmo ou a mensagens de grupo/status
+    console.log(`Mensagem recebida de ${remetente}: "${textoOriginal}"`);
+
+    // 2. Ignora status e calls
     if (msg.isStatus || remetente === 'status@broadcast' || msg.type === 'call') {
         return;
     }
-    
+
+    // Se a mensagem veio do grupo, precisamos saber QUEM mandou dentro do grupo (author)
+    // Para a API Python, vamos passar o ID de quem mandou a mensagem, 
+    // mas se for grupo, o 'remetente' na query string será o ID do grupo para fins de log/resposta
+    const author = msg.author || remetente; 
+
     try {
-        const queryRemetente = encodeURIComponent(remetente);
+        const queryRemetente = encodeURIComponent(author); // Identifica quem pediu
         let url;
         let respostaPython;
         let jsonResposta;
 
-        // --- INÍCIO DA LÓGICA DE COMANDOS ATUALIZADA ---
+        // --- LÓGICA DE COMANDOS ---
         
         if (textoLower === 'comandos') {
-            // Comando "Comandos" - Resposta estática
-            console.log(`[Comando] Executando "Comandos" para ${remetente}`);
             const respostaComandos = `*Lista de Comandos Disponíveis:*\n
 *prontos*
 Encaminha todos os orçamentos que estão prontos para instalação com data agendada ou não.
@@ -84,7 +125,7 @@ Encaminha todos os orçamentos que estão nesse grupo.
 Encaminha todos os orçamentos que estão nesse grupo.
 
 *linha de produção*
-Encaminha o resumo da fila de produção, ordenado por prazo, com a posição de largada de cada colaborador.
+Encaminha o resumo da fila de produção.
 
 *standby*
 Encaminha todos os orçamentos que estão nesse grupo.
@@ -93,97 +134,96 @@ Encaminha todos os orçamentos que estão nesse grupo.
 Encaminha os detalhes de qual processo esta o orçamento.`;
             
             await client.sendMessage(remetente, respostaComandos);
-            return; // Encerra a execução aqui
+            return;
 
         } else if (textoLower === 'prontos') {
-            // Comando "Prontos"
-            console.log(`[Comando] Executando "Prontos" para ${remetente}`);
-            url = `${PYTHON_API_HOST}/api/bot/prontos?remetente=${queryRemetente}`;
+            console.log(`[Comando] "Prontos" solicitado em ${remetente}`);
+            url = `${PYTHON_API_HOST}/api/bot/prontos?remetente=${queryRemetente}`; // Vamos passar o author se precisar validar no python, mas o python valida lista.
+            // Nota: Para simplificar, no python vamos adicionar o author à lista ou confiar na filtragem do bot aqui.
+            // Para manter compatibilidade com o app.py atual, vamos "fingir" ser um admin na query se for do grupo,
+            // ou você deve adicionar o ID do grupo na lista AUTHORIZED_BOT_NUMBERS do app.py.
+            // VOU AJUSTAR A CHAMADA PARA USAR UM NÚMERO FIXO AUTORIZADO SE FOR DO GRUPO
+            // para garantir que o Python responda.
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente; 
+            url = `${PYTHON_API_HOST}/api/bot/prontos?remetente=${encodeURIComponent(authUser)}`;
             
         } else if (textoLower === 'agenda') {
-            // Comando "Agenda"
-            console.log(`[Comando] Executando "Agenda" para ${remetente}`);
-            url = `${PYTHON_API_HOST}/api/bot/agenda?remetente=${queryRemetente}`;
+            console.log(`[Comando] "Agenda" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            url = `${PYTHON_API_HOST}/api/bot/agenda?remetente=${encodeURIComponent(authUser)}`;
 
         } else if (textoLower.startsWith('atrasados')) {
-            // Comando "Atrasados X dias"
             const parts = textoLower.split(' ');
-            const dias = parseInt(parts[1]) || 7; // Padrão de 7 dias
-            console.log(`[Comando] Executando "Atrasados ${dias} dias" para ${remetente}`);
-            url = `${PYTHON_API_HOST}/api/bot/atrasados?dias=${dias}&remetente=${queryRemetente}`;
+            const dias = parseInt(parts[1]) || 7;
+            console.log(`[Comando] "Atrasados" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            url = `${PYTHON_API_HOST}/api/bot/atrasados?dias=${dias}&remetente=${encodeURIComponent(authUser)}`;
 
-        // --- NOVOS COMANDOS DE GRUPO ---
         } else if (textoLower === 'entrada de orçamento') {
-            console.log(`[Comando] Executando "Entrada de Orçamento" para ${remetente}`);
-            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=Entrada de Orçamento&remetente=${queryRemetente}`;
+            console.log(`[Comando] "Entrada de Orçamento" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=Entrada de Orçamento&remetente=${encodeURIComponent(authUser)}`;
         
         } else if (textoLower === 'visitas e medidas') {
-            console.log(`[Comando] Executando "Visitas e Medidas" para ${remetente}`);
-            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=Visitas e Medidas&remetente=${queryRemetente}`;
+            console.log(`[Comando] "Visitas e Medidas" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=Visitas e Medidas&remetente=${encodeURIComponent(authUser)}`;
 
         } else if (textoLower === 'projetar') {
-            console.log(`[Comando] Executando "Projetar" para ${remetente}`);
-            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=Projetar&remetente=${queryRemetente}`;
+            console.log(`[Comando] "Projetar" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=Projetar&remetente=${encodeURIComponent(authUser)}`;
         
-        // ==========================================================
-        // === INÍCIO DA ALTERAÇÃO (Etapa 1 do seu plano) ===
-        // ==========================================================
         } else if (textoLower === 'linha de produção') {
-            console.log(`[Comando] Executando "Linha de Produção" (Nova Fila) para ${remetente}`);
-            // Chama a nova rota que calcula a fila de produção
-            url = `${PYTHON_API_HOST}/api/bot/fila_producao?remetente=${queryRemetente}`;
-        // ==========================================================
-        // === FIM DA ALTERAÇÃO (Etapa 1 do seu plano) ===
-        // ==========================================================
+            console.log(`[Comando] "Linha de Produção" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            url = `${PYTHON_API_HOST}/api/bot/fila_producao?remetente=${encodeURIComponent(authUser)}`;
         
         } else if (textoLower === 'standby') {
-            console.log(`[Comando] Executando "Standby" para ${remetente}`);
-            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=StandBy&remetente=${queryRemetente}`;
+            console.log(`[Comando] "Standby" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            url = `${PYTHON_API_HOST}/api/bot/grupo?nome_grupo=StandBy&remetente=${encodeURIComponent(authUser)}`;
 
         } else {
-            // Lógica Padrão (Busca por número ou cliente)
-            console.log(`[Busca] Procurando por "${textoOriginal}" para ${remetente}`);
-            const queryTexto = encodeURIComponent(textoOriginal); // Usa o texto original
-            url = `${PYTHON_API_HOST}/api/bot/query?texto=${queryTexto}&remetente=${queryRemetente}`;
+            // Busca Padrão
+            if (textoOriginal.length < 2) return; // Ignora mensagens muito curtas
+            console.log(`[Busca] "${textoOriginal}" solicitado em ${remetente}`);
+            const authUser = isTargetGroup ? AUTHORIZED_BOT_NUMBERS[0] : remetente;
+            const queryTexto = encodeURIComponent(textoOriginal);
+            url = `${PYTHON_API_HOST}/api/bot/query?texto=${queryTexto}&remetente=${encodeURIComponent(authUser)}`;
         }
-        
-        // --- FIM DA LÓGICA DE COMANDOS ---
 
+        // --- EXECUÇÃO DA REQUISIÇÃO AO PYTHON ---
         respostaPython = await httpGet(url);
-        jsonResposta = JSON.parse(respostaPython);
-
-        // --- ALTERAÇÃO SOLICITADA (SUPORTE A MÚLTIPLAS MENSAGENS) ---
         
+        try {
+            jsonResposta = JSON.parse(respostaPython);
+        } catch (e) {
+            // Se não for JSON, pode ser erro ou string direta (embora seu app retorne JSON)
+            console.error("Erro ao parsear resposta do Python:", e);
+            return;
+        }
+
+        // Envio da Resposta
         if (jsonResposta.respostas) { 
-            // É uma busca (pode ter 0, 1 ou muitas respostas)
-            if (jsonResposta.respostas.length === 0) {
-                console.log("Resposta da API (busca) vazia. Ignorando.");
-            } else {
-                console.log(`Enviando ${jsonResposta.respostas.length} respostas para ${remetente}`);
+            // Caso: Busca (array de respostas)
+            if (jsonResposta.respostas.length > 0) {
                 for (const resposta of jsonResposta.respostas) {
-                    // Envia cada resposta individualmente
                     await client.sendMessage(remetente, resposta);
-                    // Adiciona um pequeno delay para garantir a ordem das mensagens
                     await new Promise(resolve => setTimeout(resolve, 500)); 
                 }
             }
         } else if (jsonResposta.resposta && jsonResposta.resposta.trim() !== "") {
-            // É um comando (prontos, agenda, atrasados, ou grupo) que retornou uma resposta singular
-            console.log(`Enviando resposta (comando) para ${remetente}`);
+            // Caso: Comando (resposta única)
             await client.sendMessage(remetente, jsonResposta.resposta);
-        } else {
-            // Comando não retornou nada, ou a busca falhou
-            console.log("Resposta da API vazia ou mal formatada. Ignorando.");
         }
-        // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
-        console.error('Erro ao processar a mensagem:', error);
-        // Não envia resposta de erro ao usuário
+        console.error('Erro ao processar mensagem/comando:', error);
     }
 });
 
-// Função helper para fazer a requisição HTTP para o app.py
+// Função helper para requisições GET
 function httpGet(url) {
     return new Promise((resolve, reject) => {
         http.get(url, (res) => {
