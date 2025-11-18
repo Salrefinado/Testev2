@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'Entrada de Orçamento': ['Orçamento', 'Link', 'Arquivos', 'Status'],
         'Visitas e Medidas': ['Orçamento', 'Link', 'Arquivos', 'Status', 'Data Visita', 'Responsável'],
         'Projetar': ['Orçamento', 'Link', 'Arquivos', 'Status'],
-        // CORREÇÃO: Definição correta das colunas para Linha de Produção (Sem 'Status')
         'Linha de Produção': ['Orçamento', 'Link', 'Arquivos', 'Data Entrada', 'Data Limite', 'Tarefas de Produção'],
         'Prontos': ['Orçamento', 'Link', 'Arquivos', 'Status', 'Itens Prontos', 'Data Pronto', 'Data Instalação', 'Responsável Inst.'],
         'StandBy': ['Orçamento', 'Link', 'Arquivos', 'Status', 'Motivo'],
@@ -82,6 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let weatherFetchController = null;
     let openGroupIdOnLoad = null; 
     let dragOverThrottle = null;
+    
+    // NOVO: Conjunto para armazenar IDs de orçamentos expandidos na Linha de Produção
+    let expandedProductionRows = new Set();
 
     // Elementos do Modal de Criação
     const itemSearchInput = document.getElementById('item-search-input');
@@ -156,9 +158,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadWorkflow() {
         const groupIdToOpen = openGroupIdOnLoad;
         openGroupIdOnLoad = null; 
-        const currentOpenGroupId = !groupIdToOpen 
-            ? document.querySelector('.monday-group:not(.collapsed)')?.dataset.groupId 
-            : null;
+        
+        // Recupera grupos abertos para manter estado (opcional, mas bom para UX)
+        const previouslyOpenGroups = Array.from(document.querySelectorAll('.monday-group:not(.collapsed)'))
+            .map(g => g.dataset.groupId);
 
         try {
             const response = await fetch('/api/workflow');
@@ -188,13 +191,19 @@ document.addEventListener('DOMContentLoaded', () => {
             initDragAndDrop();
             updateTimestamps(); 
 
+            // Lógica de restauração de estado dos grupos
             if (groupIdToOpen) {
-                const groupToReopen = document.querySelector(`.monday-group[data-group-id="${groupIdToOpen}"]`);
-                if (groupToReopen) groupToReopen.classList.remove('collapsed');
-            } else if (currentOpenGroupId) {
-                const groupToReopen = document.querySelector(`.monday-group[data-group-id="${currentOpenGroupId}"]`);
-                if (groupToReopen) groupToReopen.classList.remove('collapsed');
+                // Se houve uma ação explicita que requer abrir um grupo
+                const groupToOpen = document.querySelector(`.monday-group[data-group-id="${groupIdToOpen}"]`);
+                if (groupToOpen) groupToOpen.classList.remove('collapsed');
+            } else if (previouslyOpenGroups.length > 0) {
+                // Restaura os que estavam abertos
+                previouslyOpenGroups.forEach(gid => {
+                    const g = document.querySelector(`.monday-group[data-group-id="${gid}"]`);
+                    if (g) g.classList.remove('collapsed');
+                });
             } else {
+                // Padrão: abre o primeiro
                 const firstGroup = document.querySelector('.monday-group');
                 if (firstGroup) firstGroup.classList.remove('collapsed');
             }
@@ -468,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return row;
     }
     
-    // CORREÇÃO: Renderização específica para Linha de Produção
+    // Renderização específica para Linha de Produção
     function renderRowProducao(orcamento) {
         const clone = rowTemplateProducao.content.cloneNode(true);
         const row = clone.querySelector('tr');
@@ -501,7 +510,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const tarefasCell = document.createElement('td');
         tarefasCell.className = 'col-tarefas-producao';
         tarefasCell.dataset.tarefas = JSON.stringify(orcamento.tarefas); 
-        renderTarefasCompressed(orcamento.tarefas, orcamento.id, tarefasCell);
+        
+        // ATUALIZAÇÃO: Verifica se o orçamento está na lista de expandidos
+        if (expandedProductionRows.has(String(orcamento.id))) {
+            renderTarefasExpanded(orcamento.tarefas, orcamento.id, tarefasCell);
+        } else {
+            renderTarefasCompressed(orcamento.tarefas, orcamento.id, tarefasCell);
+        }
         
         row.appendChild(tarefasCell);
         return row;
@@ -825,6 +840,9 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const etapaHiddenInput = document.getElementById('modal-criar-etapa1-finalizada');
             const etapaBtnGroup = document.getElementById('etapa1-finalizada-group');
+            etapaBtnGroup.querySelectorAll('.btn-item-select.selected').forEach(btn => {
+                btn.classList.remove('selected');
+            });
             etapaBtnGroup.querySelectorAll('.btn-item-select').forEach(btn => {
                 btn.onclick = () => {
                     etapaBtnGroup.querySelector('.btn-item-select.selected')?.classList.remove('selected');
@@ -1330,30 +1348,53 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.querySelector(`tr[data-orcamento-id="${orcamentoId}"]`);
             const currentGroupName = row.closest('.monday-group').querySelector('.group-title').textContent;
 
+            // --- LÓGICA DE FLUXO SIMPLIFICADA ---
+
             if (currentGroupName === 'Entrada de Orçamento') {
-                if (novoStatus === 'Mandar para Produção') {
-                    const dados_data = await openAnexarProjetoModal(); 
-                    dados_adicionais.data_visita = dados_data.data_visita;
-                    await handleUploadArquivos(orcamentoId, dados_data.files);
-                } else if (novoStatus === 'Standby') {
+                // Se for "Mandar para Produção", apenas atualiza status (vai para Projetar)
+                // SEM pedir modal de arquivos/data.
+                if (novoStatus === 'Standby') {
                     dados_adicionais = await openStandbyModal();
                 }
             }
-            else if (currentGroupName === 'Projetar' && novoStatus === 'Aprovado para Produção') {
-                const dados_com_arquivos = await openAnexarProjetoModal();
-                await handleUploadArquivos(orcamentoId, dados_com_arquivos.files);
-                dados_adicionais.data_visita = dados_com_arquivos.data_visita;
-            }
-            else if (novoStatus === 'Agendar Visita') {
-                const dataVisitaAtual = row.dataset.dataVisita;
-                if (dataVisitaAtual && dataVisitaAtual !== 'null') {
-                    const confirmed = await openConfirmarCancelamentoModal('visita');
-                    if (confirmed) {
-                        dados_adicionais.data_visita = null;
+            else if (currentGroupName === 'Visitas e Medidas') {
+                // Se for "Mandar para Produção", apenas atualiza status (vai para Projetar)
+                // Limpa data de visita se existir
+                if (novoStatus === 'Mandar para Produção') {
+                     if (row.dataset.dataVisita && row.dataset.dataVisita !== 'null') {
+                        dados_adicionais.data_visita = null; 
                         dados_adicionais.responsavel_visita = null;
-                    } else {
-                        throw new Error('Cancelado pelo usuário');
                     }
+                }
+                else if (novoStatus === 'Agendar Visita') {
+                    const dataVisitaAtual = row.dataset.dataVisita;
+                    if (dataVisitaAtual && dataVisitaAtual !== 'null') {
+                        const confirmed = await openConfirmarCancelamentoModal('visita');
+                        if (confirmed) {
+                            dados_adicionais.data_visita = null;
+                            dados_adicionais.responsavel_visita = null;
+                        } else {
+                            throw new Error('Cancelado pelo usuário');
+                        }
+                    }
+                }
+                else if (novoStatus === 'Visita Agendada') {
+                    dados_adicionais = await openVisitaModal(orcamentoId, row.dataset.dataVisita, row.dataset.responsavelVisita);
+                }
+                else if (novoStatus === 'Standby') {
+                    dados_adicionais = await openStandbyModal(row.dataset.standbyDetails);
+                }
+            }
+            else if (currentGroupName === 'Projetar') {
+                 // AQUI SIM: Se sair de Projetar para "Aprovado para Produção" (vai para Linha de Produção)
+                 // Deve pedir o modal com arquivos e data.
+                 if (novoStatus === 'Aprovado para Produção') {
+                    const dados_com_arquivos = await openAnexarProjetoModal();
+                    await handleUploadArquivos(orcamentoId, dados_com_arquivos.files);
+                    dados_adicionais.data_visita = dados_com_arquivos.data_visita;
+                }
+                else if (novoStatus === 'StandBy') {
+                     dados_adicionais = await openStandbyModal(row.dataset.standbyDetails);
                 }
             }
             else if (novoStatus === 'Agendar Instalação/Entrega') {
@@ -1368,21 +1409,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            else if (novoStatus === 'Visita Agendada') {
-                dados_adicionais = await openVisitaModal(orcamentoId, row.dataset.dataVisita, row.dataset.responsavelVisita);
-            } else if (novoStatus === 'Instalação Agendada') {
+            else if (novoStatus === 'Instalação Agendada') {
                 dados_adicionais = await openInstalacaoModal(orcamentoId, etapaConcluida, row.dataset.dataInstalacao, row.dataset.responsavelInstalacao);
             } else if (novoStatus === 'Instalado' || novoStatus === 'Entregue') {
                 dados_adicionais = await openInstaladoModal();
-            } else if (novoStatus === 'Mandar para Produção' && currentGroupName === 'Visitas e Medidas') {
-                if (row.dataset.dataVisita && row.dataset.dataVisita !== 'null') {
-                    dados_adicionais.data_visita = null; 
-                    dados_adicionais.responsavel_visita = null;
-                }
-                const dados_data = await openAnexarProjetoModal(); 
-                dados_adicionais.data_visita = dados_data.data_visita;
-                await handleUploadArquivos(orcamentoId, dados_data.files);
-            } else if (novoStatus === 'Standby') {
+            } else if (novoStatus === 'Standby' || novoStatus === 'StandBy') {
                  if (currentGroupName !== 'Entrada de Orçamento') {
                     dados_adicionais = await openStandbyModal(row.dataset.standbyDetails);
                  }
@@ -1502,9 +1533,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (title) {
             const group = title.closest('.monday-group');
             if (group && group.classList.contains('collapsed')) {
-                document.querySelectorAll('.monday-group:not(.collapsed)').forEach(g => {
-                    if (g !== group) g.classList.add('collapsed');
-                });
+                // ATUALIZADO: Não fecha mais os outros grupos
                 group.classList.remove('collapsed');
             }
         }
@@ -1515,9 +1544,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const cell = buttonEl.closest('.col-tarefas-producao');
         const orcamentoId = buttonEl.closest('.monday-row').dataset.orcamentoId;
         const tarefas = JSON.parse(cell.dataset.tarefas);
+        
         if (action === 'expand') {
+            // Adiciona ao conjunto de expandidos
+            expandedProductionRows.add(String(orcamentoId));
             renderTarefasExpanded(tarefas, orcamentoId, cell);
         } else {
+            // Remove do conjunto de expandidos
+            expandedProductionRows.delete(String(orcamentoId));
             renderTarefasCompressed(tarefas, orcamentoId, cell);
         }
     }
@@ -1526,15 +1560,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('group-title')) {
             const group = e.target.closest('.monday-group');
             if (group) {
-                const isOpening = group.classList.contains('collapsed');
-                if (isOpening) {
-                    document.querySelectorAll('.monday-group:not(.collapsed)').forEach(g => {
-                        if (g !== group) g.classList.add('collapsed');
-                    });
-                    group.classList.remove('collapsed'); 
-                } else {
-                    group.classList.add('collapsed');
-                }
+                // ATUALIZADO: Simplesmente alterna a classe 'collapsed'
+                // Não fecha mais os outros grupos
+                group.classList.toggle('collapsed');
             }
         }
     }
@@ -1599,10 +1627,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return;
                             }
                         }
-                        if ((grupoAntigoNome === 'Projetar' && grupoNovoNome === 'Linha de Produção') || 
-                            (grupoAntigoNome === 'Visitas e Medidas' && grupoNovoNome === 'Linha de Produção') ||
-                            (grupoAntigoNome === 'Entrada de Orçamento' && grupoNovoNome === 'Linha de Produção')) {
-                            try {
+                        
+                        // Verifica se está entrando em Linha de Produção (de qualquer lugar)
+                        // para pedir os dados (arquivos/data)
+                        if (grupoNovoNome === 'Linha de Produção') {
+                             try {
                                 const dados_modal = await openAnexarProjetoModal();
                                 await handleUploadArquivos(orcamentoId, dados_modal.files);
                                 dados_adicionais.data_visita = dados_modal.data_visita;

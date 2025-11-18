@@ -382,13 +382,13 @@ header {
     /* [ANIMAÇÃO DE HOVER] */
     transition: all 0.2s ease-in-out;
     opacity: 1;
-    transform: scale(1);
+    /* transform: scale(1); REMOVIDO PARA EVITAR SCROLL HORIZONTAL */
     position: relative;
     z-index: 2;
 }
 .monday-row:hover {
     /* [ANIMAÇÃO DE HOVER] - Elevação */
-    transform: scale(1.005);
+    /* transform: scale(1.005); REMOVIDO PARA EVITAR SCROLL HORIZONTAL */
     background-color: #fff;
     box-shadow: var(--color-shadow-medium);
     z-index: 10; /* Fica acima das outras linhas */

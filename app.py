@@ -1056,7 +1056,6 @@ def update_orcamento_status(orc_id):
         elif novo_status == 'Mandar para Produção':
             orcamento.grupo_id = g_projetar
             orcamento.status_atual = 'Desenhar'
-            moveu_para_producao = True # *** MANTIDO ***
         elif novo_status == 'Standby':
             orcamento.grupo_id = g_standby
             orcamento.status_atual = 'Standby'
@@ -1081,7 +1080,6 @@ def update_orcamento_status(orc_id):
         elif novo_status == 'Mandar para Produção':
             orcamento.grupo_id = g_projetar
             orcamento.status_atual = 'Desenhar'
-            moveu_para_producao = True # *** ADICIONADO ***
         elif novo_status == 'Standby':
             orcamento.grupo_id = g_standby
             orcamento.status_atual = 'Standby'
