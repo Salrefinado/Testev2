@@ -693,12 +693,34 @@ header {
 .col-status { 
     position: relative;
     z-index: 5;
+    /* === NOVA REGRA DE LARGURA FIXA PARA STATUS === */
+    width: 180px;      /* Largura ideal para caber os botões */
+    min-width: 180px;  /* Impede que encolha */
+    max-width: 180px;  /* Impede que estique */
+    box-sizing: border-box;
+    padding-right: 0 !important; /* Aproxima o conteúdo da borda se necessário */
 }
-.col-status-final .status-final-text {
-    font-weight: 600;
-    color: var(--status-instalado-text);
-    padding: 6px 10px;
-    display: inline-block;
+
+/* Aplica a mesma regra para o Status Final (Instalados) */
+.col-status-final {
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    box-sizing: border-box;
+}
+
+/* Classe auxiliar para o Cabeçalho (TH) que será injetada via JS */
+.th-status-fixed {
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    box-sizing: border-box;
+}
+
+/* Garante que o conteúdo da célula de status (o dropdown) ocupe o espaço */
+.col-status .status-selector {
+    width: 100%; /* Ocupa os 180px disponíveis */
+}
 }
 
 .status-selector {

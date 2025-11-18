@@ -7,3 +7,6 @@ Flask-Login
 Flask-Dance
 APScheduler
 werkzeug
+express 
+body-parser 
+cors
