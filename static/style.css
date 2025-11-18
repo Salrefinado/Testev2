@@ -675,7 +675,7 @@ header {
 
 .btn-agendar {
     /* Herda de .btn-primary */
-    background-color: var(--color-success);
+    background-color: #e80000;
     color: white;
     border: none;
     padding: 6px 12px;
