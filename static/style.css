@@ -649,7 +649,7 @@ header {
 .btn-add-tarefa {
     font-size: 0.8rem;
     padding: 4px 10px; /* Ajustado */
-    border-radius: 6px;
+    border-radius: 12px;
     cursor: pointer;
 }
 .btn-toggle-tarefas {
