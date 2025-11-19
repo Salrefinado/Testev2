@@ -462,9 +462,9 @@ header {
 /* 3. Coluna Arquivos (Fixo - 70px - Remove a "barreira") */
 .monday-thead th:nth-child(3),
 .col-arquivos {
-    width: 100px !important;
-    min-width: 100px !important;
-    max-width: 100px !important;
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
     box-sizing: border-box;
     text-align: center;
     vertical-align: top;
@@ -477,9 +477,9 @@ header {
 .monday-thead th:nth-child(4),
 .col-status, 
 .col-status-final {
-    width: 220px !important;
-    min-width: 220px !important;
-    max-width: 220px !important;
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
     box-sizing: border-box;
     padding-right: 10px !important;
     padding-left: 50px !important;
