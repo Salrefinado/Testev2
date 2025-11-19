@@ -253,9 +253,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const grupoNome = orcamento.grupo_nome;
         if (grupoNome === 'Linha de Produção') {
             return renderRowProducao(orcamento);
-        } else if (grupoNome === 'Instalados') {
-            return renderRowFinal(orcamento);
-        } else if (statusOptionsByGroup[grupoNome]) {
+        } 
+        // A condição 'Instalados' foi removida para usar o padrão abaixo
+        else if (statusOptionsByGroup[grupoNome]) {
             return renderRowStatus(orcamento); 
         }
         console.warn('Nenhum template de linha encontrado para o grupo:', grupoNome);
