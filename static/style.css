@@ -356,7 +356,7 @@ header {
 /* --- Estrutura da Tabela (Estilo Monday) --- */
 /* ALTERAÇÃO IMPORTANTE: Largura 'auto' para compactar à esquerda */
 .monday-table {
-    width: auto !important;
+    width: 100% !important;
     min-width: 0 !important; /* Permite que a tabela seja menor que a tela */
     border-collapse: collapse;
 }
@@ -456,15 +456,14 @@ header {
     padding-left: 0 !important;
     padding-right: 0 !important;
     box-sizing: border-box;
-    vertical-align: top;
+    vertical-align: middle !important; /* <--- Alterado para centralizar */
 }
-
 /* 3. Coluna Arquivos (Fixo - 70px - Remove a "barreira") */
 .monday-thead th:nth-child(3),
 .col-arquivos {
-    width: 200px !important;
-    min-width: 200px !important;
-    max-width: 200px !important;
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
     box-sizing: border-box;
     text-align: center;
     vertical-align: top;
@@ -473,8 +472,7 @@ header {
     overflow: hidden;
 }
 
-/* 4. Coluna Status (Fixo - 180px - Cola na coluna Arquivos) */
-.monday-thead th:nth-child(4),
+/* 4. Coluna Status (Apenas para células de Status, não para o cabeçalho global) */
 .col-status, 
 .col-status-final {
     width: 300px !important;
@@ -487,6 +485,22 @@ header {
     z-index: 5;
 }
 
+/* Ajuste específico para o Cabeçalho da 4ª Coluna (Data Entrada / Status) */
+.monday-thead th:nth-child(4) {
+    /* Largura flexível: 
+       - Na Linha de Produção (Data) vai encolher para ~150px.
+       - Nos outros grupos (Status) vai esticar para acompanhar a célula de 300px.
+    */
+    width: auto !important; 
+    min-width: 100px !important; /* Mínimo seguro para datas */
+    padding-left: 20px !important; /* Padding normal */
+}
+
+/* 5. Coluna Data Limite (Linha de Produção) */
+.monday-thead th:nth-child(5) {
+    min-width: 160px !important; /* Espaço para Texto + Botão */
+    white-space: nowrap;
+}
 /* Colunas de dados padrão (5, 6, etc...) */
 .col-data {
     font-size: 0.9rem;
@@ -582,14 +596,24 @@ header {
 
 
 /* --- Célula de Tarefas de Produção --- */
+/* --- Célula de Tarefas de Produção (CORRIGIDO) --- */
 .col-tarefas-producao {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    /* Removemos display: flex do TD para manter a integridade da linha da tabela */
+    display: table-cell !important; 
+    vertical-align: top !important; /* Garante que o conteúdo comece no topo alinhado com os outros */
+    
     min-width: 350px;
-    vertical-align: top !important;
     position: relative;
     z-index: 5;
+    
+    /* Garante o padding padrão para alinhar com as outras células */
+    padding: 16px 20px !important; 
+    box-sizing: border-box;
+}
+
+/* Garante que o conteúdo interno preencha a célula corretamente */
+.col-tarefas-producao > div {
+    width: 100%;
 }
 .tarefas-compressed {
     display: flex;
@@ -1649,4 +1673,12 @@ a .form-group que estão DENTRO de .form-row.
 }
 #modal-edit-simples input[type="text"] {
     display: block; /* Visível por padrão */
+}
+
+/* --- Ajuste Fino: Data Entrada (Linha de Produção) --- */
+/* Aplica-se apenas à 4ª coluna (Data Entrada) que seja do tipo data.
+   Empurra o texto "19/11/2025" para a direita sem mover o título.
+*/
+.monday-row td:nth-child(4).col-data-date {
+    padding-left: 22px !important; /* Aumente ou diminua este valor conforme desejar */
 }
