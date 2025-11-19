@@ -698,6 +698,13 @@ document.addEventListener('DOMContentLoaded', () => {
         modalCriarOrcamento.querySelectorAll('.btn-item-select.selected').forEach(btn => {
             btn.classList.remove('selected');
         });
+        // Reset visual state for Etapa 1 buttons (in case it was disabled)
+        const etapa1Wrapper = document.getElementById('etapa1-finalizada-wrapper');
+        if(etapa1Wrapper) {
+            etapa1Wrapper.style.opacity = '1';
+            etapa1Wrapper.style.pointerEvents = 'auto';
+        }
+        
         document.getElementById('form-detalhes-orcamento').reset();
         document.getElementById('form-edit-simples').reset();
         document.getElementById('modal-standby-motivo').value = '';
@@ -850,6 +857,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     etapaHiddenInput.value = btn.dataset.value;
                 };
             });
+            
+            // --- NOVA LÓGICA: Monitora Prazo Etapa 2 para desabilitar "Etapa 1 Finalizada?" ---
+            const prazo2Input = document.getElementById('modal-criar-prazo-dias2');
+            const etapa1Wrapper = document.getElementById('etapa1-finalizada-wrapper');
+
+            prazo2Input.addEventListener('input', function() {
+                const val = parseInt(this.value);
+                if (!isNaN(val) && val === 0) {
+                    // Se for 0, desabilita e limpa
+                    etapa1Wrapper.style.opacity = '0.5';
+                    etapa1Wrapper.style.pointerEvents = 'none';
+                    etapaBtnGroup.querySelectorAll('.btn-item-select.selected').forEach(btn => btn.classList.remove('selected'));
+                    etapaHiddenInput.value = ''; 
+                } else {
+                    // Se for > 0 ou vazio, habilita
+                    etapa1Wrapper.style.opacity = '1';
+                    etapa1Wrapper.style.pointerEvents = 'auto';
+                }
+            });
+            // -----------------------------------------------------------------------------------
+
             modalCriarOrcamento.querySelectorAll('.btn-quick-day').forEach(btn => {
                 btn.onclick = () => {
                     const dias = btn.dataset.dias;
@@ -857,6 +885,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const targetInput = document.getElementById(targetInputId);
                     if (targetInput) {
                         targetInput.value = dias;
+                        // Dispara o evento input para atualizar a lógica acima se for o input da etapa 2
+                        targetInput.dispatchEvent(new Event('input'));
                     }
                 };
             });
@@ -908,12 +938,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!formData.get('numero_orcamento') || !formData.get('nome_cliente')) {
             alert('Número do Orçamento e Nome do Cliente são obrigatórios.'); return;
         }
-        if (!formData.get('prazo_dias_etapa1') || !formData.get('prazo_dias_etapa2')) {
+        if (!formData.get('prazo_dias_etapa1') || formData.get('prazo_dias_etapa2') === "") {
             alert('Os Prazos (em dias) da Etapa 1 e Etapa 2 são obrigatórios.'); return;
         }
-        if (!etapaFinalizada) {
+        
+        // --- ATUALIZAÇÃO VALIDAÇÃO: Só exige "Etapa 1 Finalizada" se Prazo 2 > 0 ---
+        const prazo2 = parseInt(formData.get('prazo_dias_etapa2'));
+        if (prazo2 > 0 && !etapaFinalizada) {
             alert('Por favor, selecione se a Etapa 1 já foi finalizada (Sim ou Não).'); return;
         }
+        // ---------------------------------------------------------------------------
+
         try {
             const response = await fetch('/api/orcamento/create_manual', { method: 'POST', body: formData });
             if (response.status === 401) { window.location.href = '/login'; return; }
