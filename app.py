@@ -80,7 +80,7 @@ def send_whatsapp_notification(message, phone_numbers=None):
     """
     Envia notificação para o Bot Local (bot.js).
     O parâmetro phone_numbers é mantido para compatibilidade de chamada, 
-    mas o bot.js decidirá o destino (Grupo 120363404624474162@g.us).
+    mas o bot.js decidirá o destino (Grupo alvo).
     """
     def send_request_target(msg_content):
         try:
@@ -129,10 +129,10 @@ MAP_ITEM_COLABORADOR = {
     "Isolamento Coifa": "Renato",
 
     # Luiz (Etapa 2)
-    "Regulagem de balanço": "Luiz", # (Item antigo)
-    "Sistema Giratório": "Luiz", # (Item antigo)
+    "Regulagem de balanço": "Luiz", 
+    "Sistema Giratório": "Luiz", 
     "Moldura Área de fogo": "Luiz",
-    "Bancada interna": "Luiz", # (Item antigo)
+    "Bancada interna": "Luiz", 
     "Bifeteira grill": "Luiz",
     "Cooktop + Bifeteira": "Luiz",
     "Cooktop": "Luiz",
@@ -144,9 +144,9 @@ MAP_ITEM_COLABORADOR = {
     "Giratório 2L": "Luiz",
 
     # José (Etapa 2)
-    "Grelhas": "José", # (Item antigo)
-    "Espetos": "José", # (Item antigo)
-    "Sistema de elevar Manual": "José", # (Item antigo)
+    "Grelhas": "José", 
+    "Espetos": "José", 
+    "Sistema de elevar Manual": "José", 
     "Grelha de descanso": "José",
     "Kit 6 Espetos": "José",
     "Regulagem Comum 2": "José",
@@ -158,8 +158,8 @@ MAP_ITEM_COLABORADOR = {
     # Anderson (Etapa 2)
     "Tampa Inox": "Anderson",
     "Tampa Epoxi": "Anderson",
-    "Tampa INOX": "Anderson", # (Duplicado por segurança)
-    "Tampa Preto Epoxi": "Anderson", # (Duplicado por segurança)
+    "Tampa INOX": "Anderson", 
+    "Tampa Preto Epoxi": "Anderson", 
 
     # Lareiras (Etapa 2)
     "KAM600": "Edison", "KAM700": "Edison", "KAM800": "Edison", "KAM900": "Edison",
@@ -868,7 +868,7 @@ def create_orcamento_manual():
         if not itens_str: itens_str = "Nenhum"
         
         message = f"📥 Novo Orçamento\n👤 Cliente: {numero} {cliente}\n\n📦 Itens ({'Etapa 1' if etapa_concluida_int == 0 else 'Etapa 2'}): {itens_str}"
-        send_whatsapp_notification(message, [PHONE_ADMIN])
+        send_whatsapp_notification(message, LISTA_GERAL)
         
         return jsonify(novo_orcamento.to_dict()), 201
     
@@ -931,7 +931,7 @@ def upload_orcamento():
         
         itens_str = novo_orcamento.etapa1_descricao or "Nenhum"
         message = f"📥 Novo Orçamento (ZIP)\n👤 Cliente: {novo_orcamento.numero} {novo_orcamento.cliente}\n\n📦 Itens (Etapa 1): {itens_str}\n\n(Tarefas devem ser adicionadas manualmente)"
-        send_whatsapp_notification(message, [PHONE_ADMIN])
+        send_whatsapp_notification(message, LISTA_GERAL)
         
         return jsonify(novo_orcamento.to_dict()), 201
         
@@ -1029,9 +1029,13 @@ def update_orcamento_status(orc_id):
     data = request.json
     novo_status = data.get('novo_status')
     dados_adicionais = data.get('dados_adicionais', {})
+    
     status_antigo = orcamento.status_atual
     grupo_atual_id = orcamento.grupo_id
+    grupo_antigo_nome = orcamento.grupo.nome
+    
     orcamento.status_atual = novo_status
+    
     grupos = {g.nome: g.id for g in Grupo.query.all()}
     g_entrada = grupos.get('Entrada de Orçamento')
     g_visitas = grupos.get('Visitas e Medidas')
@@ -1040,28 +1044,29 @@ def update_orcamento_status(orc_id):
     g_prontos = grupos.get('Prontos')
     g_standby = grupos.get('StandBy')
     g_instalados = grupos.get('Instalados')
+    
     moveu_para_producao = False
     notification_message = None
-    notification_recipients = []
     
-    # Lógica de movimentação de grupo baseada na mudança de status
-    
-    if grupo_atual_id == g_entrada:
-        notification_recipients = LISTA_GERAL
-        notification_message = f"📋 Atualização de Orçamento\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🔄 Mudou o status de: {status_antigo}\n➡️ Para: {novo_status}"
+    # --- 1) Notificação GLOBAL de Standby ---
+    if novo_status == 'Standby' or novo_status == 'StandBy':
+        motivo = dados_adicionais.get('standby_details', 'Motivo não informado')
+        notification_message = f"👤 Cliente: {orcamento.numero} {orcamento.cliente}\n📁 Movido de: {grupo_antigo_nome}\n📦 Para Standby\n🏷 Motivo: {motivo}"
         
+        # Atualiza o status e grupo
+        orcamento.grupo_id = g_standby
+        orcamento.status_atual = 'Standby'
+        orcamento.grupo_origem_standby = grupo_atual_id
+        orcamento.standby_details = motivo
+
+    # --- Lógica por Grupos (Se não for Standby global) ---
+    elif grupo_atual_id == g_entrada:
         if novo_status == 'Agendar Visita':
             orcamento.grupo_id = g_visitas
             orcamento.status_atual = 'Agendar Visita'
         elif novo_status == 'Mandar para Produção':
             orcamento.grupo_id = g_projetar
             orcamento.status_atual = 'Desenhar'
-        elif novo_status == 'Standby':
-            orcamento.grupo_id = g_standby
-            orcamento.status_atual = 'Standby'
-            orcamento.grupo_origem_standby = grupo_atual_id
-            if dados_adicionais.get('standby_details'):
-                orcamento.standby_details = dados_adicionais.get('standby_details')
             
     elif grupo_atual_id == g_visitas:
         if status_antigo == 'Visita Agendada' and novo_status != 'Visita Agendada':
@@ -1069,42 +1074,52 @@ def update_orcamento_status(orc_id):
             orcamento.responsavel_visita = None
             
         if novo_status == 'Agendar Visita':
+            # Cancelamento explícito de visita
             if 'data_visita' in dados_adicionais and dados_adicionais.get('data_visita') is None:
                 orcamento.data_visita = None
                 orcamento.responsavel_visita = None
                 details = f"Usuário '{current_user.nome}' cancelou o agendamento da visita para '{orcamento.numero}'."
                 log_activity(orcamento, "Cancelamento de Visita", details)
+        
         elif novo_status == 'Visita Agendada':
             orcamento.data_visita = parse_datetime(dados_adicionais.get('data_visita'))
             orcamento.responsavel_visita = dados_adicionais.get('responsavel_visita')
+            
+            # Notificação 2: Visita Agendada
+            data_fmt = orcamento.data_visita.strftime('%d/%m %H:%M') if orcamento.data_visita else 'N/A'
+            endereco_fmt = orcamento.endereco or "Endereço não cadastrado"
+            
+            # Se for etapa 2, notifica como Visita E2 (Item 8 da lista)
+            if orcamento.etapa_concluida >= 1:
+                 notification_message = f"🚗 Visita E2 Agendada!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Data: {data_fmt}\n👷 Responsável: {orcamento.responsavel_visita}\n📍 Local: {endereco_fmt}"
+            else:
+                 notification_message = f"🚗 Visita Agendada!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Data: {data_fmt}\n👷 Responsável: {orcamento.responsavel_visita}\n📍 Local: {endereco_fmt}"
+
         elif novo_status == 'Mandar para Produção':
             orcamento.grupo_id = g_projetar
             orcamento.status_atual = 'Desenhar'
-        elif novo_status == 'Standby':
-            orcamento.grupo_id = g_standby
-            orcamento.status_atual = 'Standby'
-            orcamento.grupo_origem_standby = grupo_atual_id
-            if dados_adicionais.get('standby_details'):
-                orcamento.standby_details = dados_adicionais.get('standby_details')
-                
+            # Notificação 9: Visita/Medidas -> Produção (Projetar)
+            notification_message = f"📋 Enviado para Produção\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Visita / Medidas concluídas e enviadas para Projetar."
+
     elif grupo_atual_id == g_projetar:
-        if novo_status == 'Aprovado para Produção':
+        if novo_status == 'Em Desenho':
+            # Notificação 5A: Em Desenho
+            data_visita_str = "Não informada"
+            # Tenta pegar a data de visita da etapa atual
+            if orcamento.etapa_concluida == 0 and orcamento.data_visita:
+                data_visita_str = orcamento.data_visita.strftime('%d/%m')
+            elif orcamento.etapa_concluida >= 1 and orcamento.data_visita_etapa2:
+                data_visita_str = orcamento.data_visita_etapa2.strftime('%d/%m')
+            
+            notification_message = f"📐 Em Desenho\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Data da Visita: {data_visita_str}"
+
+        elif novo_status == 'Aprovado para Produção':
             orcamento.grupo_id = g_producao
             moveu_para_producao = True
-        elif novo_status == 'StandBy':
-            orcamento.grupo_id = g_standby
-            orcamento.status_atual = 'Standby'
-            orcamento.grupo_origem_standby = grupo_atual_id
-            if dados_adicionais.get('standby_details'):
-                orcamento.standby_details = dados_adicionais.get('standby_details')
-            
+            # A notificação é montada mais abaixo, após calcular datas
+
     elif grupo_atual_id == g_producao:
-        if novo_status == 'StandBy':
-            orcamento.grupo_id = g_standby
-            orcamento.status_atual = 'Standby'
-            orcamento.grupo_origem_standby = grupo_atual_id
-            if dados_adicionais.get('standby_details'):
-                orcamento.standby_details = dados_adicionais.get('standby_details')
+        pass # Lógica já coberta pelo status (ex: Standby global)
             
     elif grupo_atual_id == g_prontos:
         if status_antigo == 'Instalação Agendada' and novo_status != 'Instalação Agendada':
@@ -1114,9 +1129,14 @@ def update_orcamento_status(orc_id):
         if novo_status == 'Instalação Agendada':
             orcamento.data_instalacao = parse_datetime(dados_adicionais.get('data_instalacao'))
             orcamento.responsavel_instalacao = dados_adicionais.get('responsavel_instalacao')
+            
+            # Notificação 6: Instalação Agendada
+            data_fmt = orcamento.data_instalacao.strftime('%d/%m %H:%M') if orcamento.data_instalacao else 'N/A'
+            endereco_fmt = orcamento.endereco or "Endereço não cadastrado"
+            notification_message = f"🔧 Instalação Agendada!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Data: {data_fmt}\n👷 Responsável: {orcamento.responsavel_instalacao}\n📍 Local: {endereco_fmt}"
         
         elif novo_status == 'Agendar Instalação/Entrega':
-            if 'data_instalacao' in dados_adicionais and dados_adicionais.get('data_instalacao') is None:
+             if 'data_instalacao' in dados_adicionais and dados_adicionais.get('data_instalacao') is None:
                 orcamento.data_instalacao = None
                 orcamento.responsavel_instalacao = None
                 details = f"Usuário '{current_user.nome}' cancelou o agendamento da instalação para '{orcamento.numero}'."
@@ -1127,68 +1147,62 @@ def update_orcamento_status(orc_id):
             orcamento.status_atual = 'Instalado'
             orcamento.etapa_concluida = 2
             notification_message = f"🚚 Entrega Concluída!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📦 O pedido foi marcado como 'Entregue' e movido para 'Instalados' (Etapa Final)."
-            notification_recipients = LISTA_GERAL
 
-        elif novo_status == 'StandBy':
-            orcamento.grupo_id = g_standby
-            orcamento.status_atual = 'Standby'
-            orcamento.grupo_origem_standby = grupo_atual_id
-            if dados_adicionais.get('standby_details'):
-                orcamento.standby_details = dados_adicionais.get('standby_details')
-            
         elif novo_status == 'Instalado':
             etapa = dados_adicionais.get('etapa_instalada')
             if etapa == 'Etapa 1':
                 orcamento.grupo_id = g_visitas
                 orcamento.status_atual = 'Agendar Visita'
                 orcamento.etapa_concluida = 1
+                notification_message = f"🎉 Instalação 1ª Etapa Concluída!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📁 Movido para Visitas e Medidas — agendar a visita para a 2ª etapa."
             elif etapa == 'Etapa 2':
                 orcamento.grupo_id = g_instalados
                 orcamento.status_atual = 'Instalado'
                 orcamento.etapa_concluida = 2
+                notification_message = f"🎉 Instalação Final Concluída!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📁 Projeto finalizado com sucesso."
                 
     elif grupo_atual_id == g_standby:
-        notification_recipients = LISTA_GERAL
-        
         if novo_status == 'Agendar visita':
-            notification_message = f"🔄 Orçamento Liberado (Standby)\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Movido para: Visitas e Medidas (Agendar Visita)"
             orcamento.grupo_id = g_visitas
             orcamento.status_atual = 'Agendar Visita'
             orcamento.grupo_origem_standby = None
             orcamento.standby_details = None
+            notification_message = f"🔄 Retorno de Standby\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Movido para: Visitas e Medidas (Agendar Visita)"
+            
         elif novo_status == 'Mandar para Produção':
-            notification_message = f"🔄 Orçamento Liberado (Standby)\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Movido para: Projetar (Desenhar)"
             orcamento.grupo_id = g_projetar
             orcamento.status_atual = 'Desenhar'
             orcamento.grupo_origem_standby = None
             orcamento.standby_details = None
+            notification_message = f"🔄 Retorno de Standby\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Movido para: Projetar (Desenhar)"
+            
         elif novo_status == 'Instalar':
-            notification_message = f"🔄 Orçamento Liberado (Standby)\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Movido para: Prontos (Agendar Instalação)"
             orcamento.grupo_id = g_prontos
             orcamento.status_atual = 'Agendar Instalação/Entrega'
             orcamento.grupo_origem_standby = None
             orcamento.standby_details = None
+            notification_message = f"🔄 Retorno de Standby\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Movido para: Prontos (Agendar Instalação)"
         
         elif novo_status == 'Liberado':
-            notification_message = f"🔄 Atualização de Status\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📍 Mudou o status de: {status_antigo}\n➡️ Para: {novo_status}"
             if orcamento.grupo_origem_standby: orcamento.grupo_id = orcamento.grupo_origem_standby
             else: orcamento.grupo_id = g_entrada
             orcamento.grupo_origem_standby = None
             orcamento.standby_details = None
-        
-        elif novo_status != 'Standby':
-             notification_message = f"🔄 Atualização de Status\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📍 Mudou o status de: {status_antigo}\n➡️ Para: {novo_status}"
+            notification_message = f"🔄 Retorno de Standby\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n➡️ Orçamento liberado para o fluxo normal."
             
     elif grupo_atual_id == g_instalados:
-        notification_recipients = LISTA_GERAL
-        notification_message = f"🔄 Atualização de Status\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📍 Mudou o status de: {status_antigo}\n➡️ Para: {novo_status}"
+        pass # Nenhuma ação específica
     
+    # --- Lógica de Movimentação para Produção ---
     if moveu_para_producao:
         data_visita_str = dados_adicionais.get('data_visita')
+        data_visita_obj = None
+        
         if data_visita_str:
             data_visita_obj = parse_datetime(data_visita_str)
-            orcamento.data_entrada_producao = data_visita_obj
+            orcamento.data_entrada_producao = data_visita_obj # Salva como entrada de produção
             
+            # Salva também no campo específico de visita
             current_etapa_num = orcamento.etapa_concluida + 1
             if current_etapa_num == 1:
                 orcamento.data_visita = data_visita_obj 
@@ -1196,18 +1210,29 @@ def update_orcamento_status(orc_id):
                 orcamento.data_visita_etapa2 = data_visita_obj
             
             try:
-                if orcamento.prazo_dias_etapa1:
+                # Calcula datas limite
+                if orcamento.prazo_dias_etapa1 and current_etapa_num == 1:
                     orcamento.data_limite_etapa1 = data_visita_obj + timedelta(days=int(orcamento.prazo_dias_etapa1))
-                if orcamento.prazo_dias_etapa2:
+                if orcamento.prazo_dias_etapa2 and current_etapa_num == 2:
                     orcamento.data_limite_etapa2 = data_visita_obj + timedelta(days=int(orcamento.prazo_dias_etapa2))
             except Exception as e:
                 print(f"Erro ao calcular datas limite: {e}")
         
+        # Reseta status das tarefas da etapa atual
         current_etapa = 2 if orcamento.etapa_concluida >= 1 else 1
         for tarefa in orcamento.tarefas:
             if tarefa.etapa == current_etapa:
                 tarefa.status = 'Não Iniciado'
-                
+        
+        # Notificação 5C: Aprovado para Produção
+        data_entrada_fmt = data_visita_obj.strftime('%d/%m') if data_visita_obj else "N/D"
+        
+        # Determina qual data limite exibir
+        data_limite_obj = orcamento.data_limite_etapa2 if orcamento.etapa_concluida >= 1 else orcamento.data_limite_etapa1
+        data_limite_fmt = data_limite_obj.strftime('%d/%m') if data_limite_obj else "N/D"
+        
+        notification_message = f"🏭 Aprovado para Produção\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📅 Entrada: {data_entrada_fmt}\n🚩 Prazo Limite: {data_limite_fmt}\n🗓 Data da Visita: {data_entrada_fmt}\n\n➡️ Enviado para Linha de Produção."
+
     try:
         log_cancelamento = (
             (grupo_atual_id == g_visitas and novo_status == 'Agendar Visita' and 'data_visita' in dados_adicionais) or
@@ -1221,28 +1246,8 @@ def update_orcamento_status(orc_id):
         
         db.session.commit()
         
-        if notification_message and (grupo_atual_id == g_entrada or grupo_atual_id == g_standby) and orcamento.grupo_id != grupo_atual_id:
-            grupo_novo_nome = orcamento.grupo.nome
-            if "Movido para" not in notification_message:
-                notification_message = f"📋 Atualização de Orçamento\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🔄 Mudou o status de: {status_antigo}\n➡️ Para: {novo_status}\n📁 E foi movido para o grupo: {grupo_novo_nome}"
-        if novo_status == 'Visita Agendada':
-            data_visita_fmt = orcamento.data_visita.strftime('%d/%m %H:%M') if orcamento.data_visita else 'N/A'
-            notification_message = f"📆 Visita Agendada!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📍 Data: {data_visita_fmt}\n👷 Responsável: {orcamento.responsavel_visita}"
-            notification_recipients = LISTA_GERAL
-        elif novo_status == 'Instalação Agendada':
-            data_inst_fmt = orcamento.data_instalacao.strftime('%d/%m %H:%M') if orcamento.data_instalacao else 'N/A'
-            notification_message = f"🔧 Instalação Agendada!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📍 Data: {data_inst_fmt}\n👷 Responsável: {orcamento.responsavel_instalacao}"
-            notification_recipients = LISTA_GERAL
-        elif novo_status == 'Instalado' and (grupo_atual_id == g_visitas or grupo_atual_id == g_prontos):
-            etapa = dados_adicionais.get('etapa_instalada', 'N/A')
-            etapa_num = "1ª" if etapa == 'Etapa 1' else "2ª"
-            resp_inst = orcamento.responsavel_instalacao or 'N/A'
-            notification_message = f"🎉 Instalação Concluída!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🔧 Etapa: {etapa_num} Etapa\n👷 Responsável: {resp_inst}"
-            if etapa == 'Etapa 1': notification_message += "\n\n📁 Movido para Visitas e Medidas — agendar a visita para medidas da segunda etapa."
-            notification_recipients = LISTA_GERAL
-            
-        if notification_message and notification_recipients:
-            send_whatsapp_notification(notification_message, notification_recipients)
+        if notification_message:
+            send_whatsapp_notification(notification_message, LISTA_GERAL)
             
         return jsonify(orcamento.to_dict())
     except Exception as e:
@@ -1305,8 +1310,8 @@ def update_tarefa_status(tarefa_id):
     elif novo_status == 'Produção Finalizada':
         notification_message = f"✅ Produção Concluída!\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🧑‍🏭 Responsável: {colaborador_alvo}\n📦 Itens finalizados: {itens_desc_agrupados}"
         if todas_prontas: notification_message += f"\n\n📁 Todas as tarefas da Etapa {etapa_alvo} concluídas. Movido para 'Prontos'.\n📅 Agende uma data de instalação ou entrega."
-    elif novo_status == 'Aguardando Vidro / Pedra': notification_message = f"📦 Aguardando Materiais\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🧑‍🏭 Responsável: {colaborador_alvo}\n🪟 Situação: Aguardando vidro/pedra para iniciar a produçã."
-    elif novo_status == 'Reforma em Andamento': notification_message = f"🔨 Reforma em Andamento\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🧑‍🏭 Responsável: {colaborador_alvo}\n🔁 Situação: Reforma em andamento na linha de produçã."
+    elif novo_status == 'Aguardando Vidro / Pedra': notification_message = f"📦 Aguardando Materiais\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🧑‍🏭 Responsável: {colaborador_alvo}\n🪟 Situação: Aguardando vidro/pedra para iniciar a produção."
+    elif novo_status == 'Reforma em Andamento': notification_message = f"🔨 Reforma em Andamento\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🧑‍🏭 Responsável: {colaborador_alvo}\n🔁 Situação: Reforma em andamento na linha de produção."
     elif novo_status == 'StandBy': notification_message = f"⏸️ Produção em StandBy\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🧑‍🏭 Responsável: {colaborador_alvo}\n📦 Situação: Projeto pausado temporariamente."
     
     if notification_message:
@@ -1327,6 +1332,8 @@ def move_orcamento(orc_id):
     if not grupo_destino: return jsonify({"error": "Grupo de destino não encontrado"}), 404
     grupo_novo_nome = grupo_destino.nome
     orcamento.grupo_id = novo_grupo_id
+    
+    notification_message = None
 
     if data.get('cancel_existing_dates'):
         orcamento.data_visita = None
@@ -1368,6 +1375,7 @@ def move_orcamento(orc_id):
     elif grupo_destino.nome == 'Prontos':
         orcamento.status_atual = 'Agendar Instalação/Entrega' 
         if not orcamento.data_pronto: orcamento.data_pronto = datetime.utcnow()
+    
     elif grupo_destino.nome == 'StandBy':
         orcamento.status_atual = 'Standby'
         if orcamento.grupo_origem_standby is None:
@@ -1375,14 +1383,24 @@ def move_orcamento(orc_id):
             orcamento.grupo_origem_standby = grupo_antigo_id
         if data.get('standby_details'):
             orcamento.standby_details = data.get('standby_details')
+        
+        # Notificação de Standby Global
+        motivo = orcamento.standby_details or "Motivo não informado"
+        notification_message = f"👤 Cliente: {orcamento.numero} {orcamento.cliente}\n📁 Movido de: {grupo_antigo_nome}\n📦 Para Standby\n🏷 Motivo: {motivo}"
             
     elif grupo_destino.nome == 'Instalados': orcamento.status_atual = 'Instalado'
     
     details = f"Usuário '{current_user.nome}' moveu o orçamento '{orcamento.numero}' do grupo '{grupo_antigo_nome}' para '{grupo_novo_nome}'."
     log_activity(orcamento, "Movimentação de Grupo", details)
     db.session.commit()
-    message = f"↔️ Item Movido Manualmente\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📁 Movido de: {grupo_antigo_nome}\n➡️ Para: {grupo_novo_nome}"
-    send_whatsapp_notification(message, LISTA_GERAL)
+    
+    if notification_message:
+        send_whatsapp_notification(notification_message, LISTA_GERAL)
+    else:
+        # Mensagem genérica de movimento
+        message = f"↔️ Item Movido Manualmente\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n📁 Movido de: {grupo_antigo_nome}\n➡️ Para: {grupo_novo_nome}"
+        send_whatsapp_notification(message, LISTA_GERAL)
+    
     return jsonify(orcamento.to_dict())
 
 @app.route('/api/orcamento/<int:orc_id>/add_tarefa', methods=['POST'])
@@ -2333,13 +2351,27 @@ def edit_orcamento_campo(orc_id):
     
     if not campo:
         return jsonify({"error": "O campo a ser editado não foi especificado."}), 400
+        
+    notification_message = None
 
     try:
         details = f"Usuário '{current_user.nome}' alterou '{campo}' para '{valor}'."
         
         if campo == 'data_visita' or campo == 'data_instalacao' or campo == 'data_pronto':
             # Estes são agendamentos (datetime)
-            setattr(orcamento, campo, parse_datetime(valor))
+            novo_val = parse_datetime(valor)
+            setattr(orcamento, campo, novo_val)
+            
+            # --- 3) e 7) Agendamento Editado ---
+            if campo == 'data_visita' and orcamento.status_atual == 'Visita Agendada':
+                data_fmt = novo_val.strftime('%d/%m %H:%M') if novo_val else "N/A"
+                endereco_fmt = orcamento.endereco or "Endereço não cadastrado"
+                notification_message = f"✏️ Agendamento Editado! (Visita)\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Nova Data: {data_fmt}\n👷 Responsável: {orcamento.responsavel_visita}\n📍 Local: {endereco_fmt}"
+            
+            elif campo == 'data_instalacao' and orcamento.status_atual == 'Instalação Agendada':
+                data_fmt = novo_val.strftime('%d/%m %H:%M') if novo_val else "N/A"
+                endereco_fmt = orcamento.endereco or "Endereço não cadastrado"
+                notification_message = f"✏️ Agendamento Editado! (Instalação)\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Nova Data: {data_fmt}\n👷 Responsável: {orcamento.responsavel_instalacao}\n📍 Local: {endereco_fmt}"
         
         elif campo == 'data_entrada_producao':
             nova_data_entrada = parse_datetime(valor)
@@ -2375,6 +2407,17 @@ def edit_orcamento_campo(orc_id):
         elif campo == 'responsavel_visita' or campo == 'responsavel_instalacao' or campo == 'standby_details':
             setattr(orcamento, campo, valor)
             
+            # --- 3) e 7) Agendamento Editado (Responsável) ---
+            if campo == 'responsavel_visita' and orcamento.status_atual == 'Visita Agendada':
+                data_fmt = orcamento.data_visita.strftime('%d/%m %H:%M') if orcamento.data_visita else "N/A"
+                endereco_fmt = orcamento.endereco or "Endereço não cadastrado"
+                notification_message = f"✏️ Agendamento Editado! (Visita)\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Nova Data: {data_fmt}\n👷 Responsável: {valor}\n📍 Local: {endereco_fmt}"
+
+            elif campo == 'responsavel_instalacao' and orcamento.status_atual == 'Instalação Agendada':
+                data_fmt = orcamento.data_instalacao.strftime('%d/%m %H:%M') if orcamento.data_instalacao else "N/A"
+                endereco_fmt = orcamento.endereco or "Endereço não cadastrado"
+                notification_message = f"✏️ Agendamento Editado! (Instalação)\n👤 Cliente: {orcamento.numero} {orcamento.cliente}\n\n🗓 Nova Data: {data_fmt}\n👷 Responsável: {valor}\n📍 Local: {endereco_fmt}"
+            
         elif campo == 'itens_prontos':
             # Atualiza a descrição E as tarefas
             if orcamento.etapa_concluida == 0:
@@ -2390,6 +2433,10 @@ def edit_orcamento_campo(orc_id):
 
         log_activity(orcamento, "Edição Rápida", details)
         db.session.commit()
+        
+        if notification_message:
+            send_whatsapp_notification(notification_message, LISTA_GERAL)
+            
         return jsonify(orcamento.to_dict())
 
     except Exception as e:
