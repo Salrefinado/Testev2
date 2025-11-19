@@ -406,6 +406,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return td;
     }
 
+    // NOVA FUNÇÃO: Renderiza botão "Agendar" ou a data da visita (Igual ao Prontos)
+    function renderVisitaCell(orcamento) {
+        const td = document.createElement('td');
+        td.className = 'col-data-date'; 
+        
+        if (orcamento.data_visita_agendada) {
+            const span = document.createElement('span');
+            span.className = 'editable-cell';
+            span.dataset.action = 'edit-data_visita';
+            span.textContent = formatarData(orcamento.data_visita_agendada);
+            td.appendChild(span);
+        } else {
+            const button = document.createElement('button');
+            button.className = 'btn-agendar';
+            button.textContent = 'Agendar';
+            button.dataset.orcamentoId = orcamento.id;
+            button.dataset.action = 'agendar-visita';
+            td.appendChild(button);
+        }
+        return td;
+    }
+
     function renderInstalacaoCell(orcamento) {
         const td = document.createElement('td');
         td.className = 'col-data';
@@ -449,10 +471,8 @@ document.addEventListener('DOMContentLoaded', () => {
         row.appendChild(statusCell);
         
         if (orcamento.grupo_nome === 'Visitas e Medidas') {
-            row.appendChild(renderDataCell(
-                formatarData(orcamento.data_visita_agendada), 
-                true, false, 'edit-data_visita'
-            ));
+            // ALTERADO: Usa renderVisitaCell para mostrar botão ou data
+            row.appendChild(renderVisitaCell(orcamento));
             row.appendChild(renderDataCell(
                 orcamento.responsavel_visita, 
                 false, false, 'edit-responsavel_visita'
@@ -1967,6 +1987,13 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (action) {
                 case 'open-detalhes': {
                     if (orcamentoId) await openDetalhesModal(orcamentoId);
+                    break;
+                }
+                case 'agendar-visita': {
+                    // Abre o modal de visita vazio
+                    const dados = await openVisitaModal(orcamentoId);
+                    // Salva e muda o status para "Visita Agendada"
+                    await updateStatus(orcamentoId, 'Visita Agendada', dados);
                     break;
                 }
                 case 'edit-data_visita': {
