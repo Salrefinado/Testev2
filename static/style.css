@@ -1682,3 +1682,82 @@ a .form-group que estão DENTRO de .form-row.
 .monday-row td:nth-child(4).col-data-date {
     padding-left: 22px !important; /* Aumente ou diminua este valor conforme desejar */
 }
+
+/* --- Ajuste Exclusivo para o Grupo 'Prontos' (ID 5) --- */
+
+/* 1. Ajusta o Título da Coluna (Status) apenas neste grupo */
+.monday-group[data-group-id="5"] .monday-thead th:nth-child(4) {
+    width: 180px !important;      /* Reduz para 180px */
+    min-width: 180px !important;
+    max-width: 180px !important;
+    padding-left: 10px !important; /* Remove o recuo excessivo */
+}
+
+/* 2. Ajusta a Célula de Dados (Botão de Status) apenas neste grupo */
+.monday-group[data-group-id="5"] .col-status {
+    width: 180px !important;      /* Reduz para 180px */
+    min-width: 180px !important;
+    max-width: 180px !important;
+    padding-left: 10px !important; /* Cola o botão na esquerda */
+}
+
+/* --- Ajuste de Alinhamento: Entrada(1), Projetar(3), StandBy(6), Instalados(7) --- */
+
+/* 1. Ajusta o Título da Coluna (Status) nestes grupos específicos */
+.monday-group[data-group-id="1"] .monday-thead th:nth-child(4), /* Entrada */
+.monday-group[data-group-id="3"] .monday-thead th:nth-child(4), /* Projetar */
+.monday-group[data-group-id="6"] .monday-thead th:nth-child(4), /* StandBy */
+.monday-group[data-group-id="7"] .monday-thead th:nth-child(4)  /* Instalados */
+{
+    width: 180px !important;      /* Largura compacta igual ao Prontos */
+    min-width: 180px !important;
+    max-width: 180px !important;
+    padding-left: 10px !important; /* Remove o recuo excessivo do título */
+}
+
+/* 2. Ajusta a Célula de Dados (Botão de Status) nestes grupos específicos */
+.monday-group[data-group-id="1"] .col-status,
+.monday-group[data-group-id="3"] .col-status,
+.monday-group[data-group-id="6"] .col-status,
+.monday-group[data-group-id="7"] .col-status-final /* Instalados usa classe diferente */
+{
+    width: 180px !important;      
+    min-width: 180px !important;
+    max-width: 180px !important;
+    padding-left: 10px !important; /* Cola o botão na esquerda, alinhando com o título */
+}
+
+/* --- Correção Definitiva: Entrada(1), Projetar(3), StandBy(6), Instalados(7) --- */
+
+/* 1. IMPEDE que a tabela estique nestes grupos (Volta a ser compacta) */
+/* Isso garante que as larguras em pixels sejam respeitadas exatemente */
+.monday-group[data-group-id="1"] .monday-table,
+.monday-group[data-group-id="3"] .monday-table,
+.monday-group[data-group-id="6"] .monday-table,
+.monday-group[data-group-id="7"] .monday-table {
+    width: auto !important;
+}
+
+/* 2. Ajusta o TÍTULO da Coluna Status para 180px e remove o recuo extra */
+.monday-group[data-group-id="1"] .monday-thead th:nth-child(4),
+.monday-group[data-group-id="3"] .monday-thead th:nth-child(4),
+.monday-group[data-group-id="6"] .monday-thead th:nth-child(4),
+.monday-group[data-group-id="7"] .monday-thead th:nth-child(4) {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+    padding-left: 10px !important; /* Alinha com o botão */
+}
+
+/* 3. Ajusta o BOTÃO de Status para 180px e remove o deslocamento */
+.monday-group[data-group-id="1"] .col-status,
+.monday-group[data-group-id="3"] .col-status,
+.monday-group[data-group-id="6"] .col-status,
+.monday-group[data-group-id="7"] .col-status-final {
+    width: 300px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+    padding-left: 10px !important; /* Remove o buraco de 50px antigo */
+}
+
+
