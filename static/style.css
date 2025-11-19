@@ -354,11 +354,13 @@ header {
 
 
 /* --- Estrutura da Tabela (Estilo Monday) --- */
+/* ALTERAÇÃO IMPORTANTE: Largura 'auto' para compactar à esquerda */
 .monday-table {
-    width: 100%;
+    width: auto !important;
+    min-width: 0 !important; /* Permite que a tabela seja menor que a tela */
     border-collapse: collapse;
-    min-width: 1000px;
 }
+
 .monday-thead th {
     background-color: #fdfdfd; /* Fundo do header da tabela mais limpo */
     text-align: left;
@@ -433,20 +435,59 @@ header {
 }
 
 
-/* Alinhamento Forçado das Colunas */
+/* --- CORREÇÃO DE ALINHAMENTO DAS COLUNAS (Compactar à Esquerda) --- */
+
+/* 1. Coluna Orçamento (Largura Fixa para não empurrar o resto) */
 .monday-thead th:nth-child(1),
 .monday-row td:nth-child(1) {
-    min-width: 250px;
-    width: 20%;
-}
-.monday-thead th:nth-child(2),
-.monday-row td:nth-child(2) {
-    vertical-align: top;
-}
-.monday-thead th:nth-child(3),
-.monday-row td:nth-child(3) {
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
+    box-sizing: border-box;
 }
 
+/* 2. Coluna Link (Fixo - 40px) */
+.monday-thead th:nth-child(2),
+.monday-row td:nth-child(2) {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    text-align: center;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box;
+    vertical-align: top;
+}
+
+/* 3. Coluna Arquivos (Fixo - 70px - Remove a "barreira") */
+.monday-thead th:nth-child(3),
+.col-arquivos {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    box-sizing: border-box;
+    text-align: center;
+    vertical-align: top;
+    padding-top: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* 4. Coluna Status (Fixo - 180px - Cola na coluna Arquivos) */
+.monday-thead th:nth-child(4),
+.col-status, 
+.col-status-final {
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+    box-sizing: border-box;
+    padding-right: 10px !important;
+    padding-left: 50px !important;
+    position: relative;
+    z-index: 5;
+}
+
+/* Colunas de dados padrão (5, 6, etc...) */
 .col-data {
     font-size: 0.9rem;
     color: var(--color-text-secondary);
@@ -517,11 +558,7 @@ header {
 
 /* ==== INÍCIO DA ATUALIZAÇÃO PONTO 3 (CSS Link Público) ==== */
 .col-public-link {
-    width: 40px;
-    min-width: 40px;
-    text-align: left;
-    padding-left: 0px;
-    padding-right: 0px;
+    /* Propriedades já definidas no bloco de Alinhamento Forçado acima */
 }
 .col-public-link .public-link-icon {
     font-size: 1.5rem; /* Tamanho maior */
@@ -644,11 +681,7 @@ header {
 }
 
 /* --- Célula de Arquivos (REFEITA) --- */
-.col-arquivos {
-    vertical-align: top;
-    padding-top: 14px; /* Alinha melhor com o texto */
-}
-
+/* As regras de largura foram movidas para o bloco de Alinhamento Forçado acima */
 .file-pdf-icon-button {
     display: inline-block;
     width: 32px;
@@ -662,6 +695,7 @@ header {
     cursor: pointer;
     transition: transform 0.2s ease, opacity 0.2s ease;
     opacity: 0.6; /* Começa semi-transparente */
+    margin: 0 auto; /* Centraliza horizontalmente */
 }
 .file-pdf-icon-button:hover {
     opacity: 1;
@@ -689,43 +723,10 @@ header {
     transform: translateY(-1px);
 }
 
-/* --- [REVISÃO PROFISSIONAL] Célula de Status --- */
-.col-status { 
-    position: relative;
-    z-index: 5;
-    /* === NOVA REGRA DE LARGURA FIXA PARA STATUS === */
-    width: 180px;      /* Largura ideal para caber os botões */
-    min-width: 180px;  /* Impede que encolha */
-    max-width: 180px;  /* Impede que estique */
-    box-sizing: border-box;
-    padding-right: 0 !important; /* Aproxima o conteúdo da borda se necessário */
-}
-
-/* Aplica a mesma regra para o Status Final (Instalados) */
-.col-status-final {
-    width: 180px;
-    min-width: 180px;
-    max-width: 180px;
-    box-sizing: border-box;
-}
-
-/* Classe auxiliar para o Cabeçalho (TH) que será injetada via JS */
-.th-status-fixed {
-    width: 180px;
-    min-width: 180px;
-    max-width: 180px;
-    box-sizing: border-box;
-}
-
-/* Garante que o conteúdo da célula de status (o dropdown) ocupe o espaço */
-.col-status .status-selector {
-    width: 100%; /* Ocupa os 180px disponíveis */
-}
-}
 
 .status-selector {
     position: relative;
-    width: 150px;
+    width: 100%; /* Ocupa o espaço da célula */
 }
 
 .status-display {
@@ -1552,34 +1553,6 @@ a .form-group que estão DENTRO de .form-row.
 .btn-danger:hover {
     background-color: #c5372a; /* Vermelho mais escuro */
     border-color: #c5372a;
-}
-
-/* Célula de Arquivos (Ícone PDF) */
-.col-arquivos {
-    vertical-align: top;
-    padding-top: 14px; /* Alinha melhor com o texto */
-}
-
-.file-pdf-icon-button {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    border: none;
-    background-color: transparent;
-    padding: 0;
-    cursor: pointer;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-    opacity: 0.6; /* Começa semi-transparente */
-}
-.file-pdf-icon-button:hover {
-    opacity: 1;
-    transform: scale(1.1);
-}
-.file-pdf-icon-button.has-files {
-    opacity: 1; /* Opacidade total se tiver arquivos */
 }
 
 /* --- NOVO: Estilo para lista de arquivos no modal --- */
