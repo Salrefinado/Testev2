@@ -134,33 +134,33 @@
             
             <div class="form-row">
                 <div class="form-group" style="flex: 1 1 100px;">
-                    <label for="modal-criar-numero">Nº Orçamento</label>
+                    <label for="modal-criar-numero">Nº Orçamento<span style="color: red">*</span> </label>
                     <input type="text" id="modal-criar-numero" name="numero_orcamento" required maxlength="10">
                 </div>
                 <div class="form-group" style="flex: 1 1 300px;">
-                    <label for="modal-criar-cliente">Nome do Cliente</label>
+                    <label for="modal-criar-cliente">Nome do Cliente<span style="color: red">*</span> </label>
                     <input type="text" id="modal-criar-cliente" name="nome_cliente" required>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="modal-criar-numero-cliente">Número Cliente</label>
-                    <input type="text" id="modal-criar-numero-cliente" name="numero_cliente" placeholder="(00) 00000-0000" maxlength="16">
+                    <label for="modal-criar-numero-cliente">Número do Cliente<span style="color: red">*</span> </label>
+                    <input type="text" id="modal-criar-numero-cliente" name="numero_cliente" placeholder="(41) 98888-8888" maxlength="16">
                 </div>
                 <div class="form-group">
-                    <label for="modal-criar-outro-numero">Outro Número (Opcional)</label>
-                    <input type="text" id="modal-criar-outro-numero" name="outro_numero" placeholder="(00) 00000-0000" maxlength="16">
+                    <label for="modal-criar-outro-numero">Outro Número</label>
+                    <input type="text" id="modal-criar-outro-numero" name="outro_numero" placeholder="(41) 98888-8888" maxlength="16">
                 </div>
             </div>
             
             <div class="form-group">
-                <label for="modal-criar-endereco">Endereço (Para previsão do tempo)</label>
+                <label for="modal-criar-endereco">Endereço da instalação <span style="color: red">*</span> </label>
                 <input type="text" id="modal-criar-endereco" name="endereco" placeholder="Rua, Número, Bairro, Cidade e CEP">
             </div>
             
             <div class="form-group form-group-file-upload">
-                <label for="modal-criar-arquivo">Anexar Arquivo (Obrigatório)</label>
+                <label for="modal-criar-arquivo">Anexar Arquivo<span style="color: red">*</span> </label>
                 <label for="modal-criar-arquivo" class="btn btn-secondary btn-file-upload">
                     <span id="file-upload-text">Escolher arquivo...</span>
                 </label>
@@ -169,7 +169,7 @@
 
             <div class="form-row" style="align-items: flex-end;">
                 <div class="form-group-flex">
-                    <label>Prazo Etapa 1 (Dias)</label>
+                    <label>Prazo Etapa 1<span style="color: red">*</span> </label>
                     <div class="prazo-input-group">
                         <div class="modal-quick-days">
                             <button type="button" class="btn btn-secondary btn-quick-day" data-dias="30" data-dias-target="modal-criar-prazo-dias1">30</button>
@@ -425,7 +425,7 @@
                         <input type="text" id="detalhes-cliente" name="cliente">
                     </div>
                     <div class="input-group">
-                        <label for="detalhes-endereco">Endereço</label>
+                        <label for="detalhes-endereco">Endereço da instalação</label>
                         <input type="text" id="detalhes-endereco" name="endereco" placeholder="Rua, N°, Bairro, Cidade">
                     </div>
                     <div class="input-group">
